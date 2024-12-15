@@ -1,19 +1,26 @@
-import { View, ScrollView, Pressable } from 'react-native';
-import { Text, Surface, List, Button } from 'react-native-paper';
+import { View, ScrollView } from 'react-native';
+import { Text, Surface, Button, List, IconButton } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 
-export default function HomeScreen() {
-  const router = useRouter();
+type Category = 'work' | 'health' | 'study' | 'leisure';
+type Priority = 'high' | 'medium' | 'low';
+
+interface Task {
+  id: string;
+  title: string;
+  category: Category;
+  priority: Priority;
+  startTime: string;
+  endTime: string;
+  completed: boolean;
+}
+
+export default function TabOneScreen() {
   // Mock data - in real app this would come from AI analysis and user data
   const userName = "Alex";
   const timeOfDay = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
-  const productivityScore = 0.75;
-  const focusTime = "2h 30m";
-  const completedTasks = 3;
-  const totalTasks = 5;
-  const streak = 7;
 
   // Smart Context mock data
   const contextData = {
@@ -55,19 +62,95 @@ export default function HomeScreen() {
     }
   };
 
-  // Calculate total time spent for proper scaling
-  const totalTimeSpent = Object.values(analyticsData.taskCategories).reduce((sum, category) => sum + category.timeSpent, 0);
-
-  const handleTaskPress = (taskId: string) => {
-    router.push(`/task-detail/${taskId}`);
-  };
-
-  // Mock data
+  // Quick stats
   const quickStats = {
     streak: { value: 7, label: "Day Streak" },
     focusTime: { value: "2h 30m", label: "Focus Time" },
     completion: { value: "80%", label: "Completion" },
     energy: { value: "High", label: "Energy" }
+  };
+
+  // Mock tasks data
+  const tasks: Task[] = [
+    {
+      id: '1',
+      title: 'Review Project Proposal',
+      category: 'work',
+      priority: 'high',
+      startTime: '10:00 AM',
+      endTime: '2:00 PM',
+      completed: false
+    },
+    {
+      id: '2',
+      title: 'Gym Session',
+      category: 'health',
+      priority: 'medium',
+      startTime: '4:00 PM',
+      endTime: '5:30 PM',
+      completed: false
+    },
+    {
+      id: '3',
+      title: 'Study React Native',
+      category: 'study',
+      priority: 'high',
+      startTime: '6:00 PM',
+      endTime: '8:00 PM',
+      completed: false
+    },
+    {
+      id: '4',
+      title: 'Movie Night',
+      category: 'leisure',
+      priority: 'low',
+      startTime: '8:30 PM',
+      endTime: '11:00 PM',
+      completed: false
+    }
+  ];
+
+  const getCategoryColor = (category: Category): string => {
+    switch (category) {
+      case 'work':
+        return '#007AFF';
+      case 'health':
+        return '#30D158';
+      case 'study':
+        return '#5856D6';
+      case 'leisure':
+        return '#FF9F0A';
+      default:
+        return '#666';
+    }
+  };
+
+  const getCategoryIcon = (category: Category): string => {
+    switch (category) {
+      case 'work':
+        return 'briefcase-outline';
+      case 'health':
+        return 'heart-outline';
+      case 'study':
+        return 'book-outline';
+      case 'leisure':
+        return 'gamepad-variant-outline';
+      default:
+        return 'tag-outline';
+    }
+  };
+
+  const getPriorityColor = (priority: Priority): string => {
+    switch (priority) {
+      case 'high':
+        return '#FF453A';
+      case 'medium':
+        return '#FF9F0A';
+      case 'low':
+        return '#30D158';
+      default:
+        return '#666';
+    }
   };
 
   return (
@@ -141,49 +224,81 @@ export default function HomeScreen() {
               <Text style={styles.statLabel}>{quickStats.energy.label}</Text>
             </View>
           </View>
-          
-          {/* Today's Tasks */}
-          <View style={styles.tasksContainer}>
-            <View style={styles.taskHeader}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>Today's Tasks</Text>
-              <Button 
-                mode="outlined" 
-                icon="plus"
-                onPress={() => {}}
-                style={styles.addButton}
-                labelStyle={styles.addButtonLabel}
-              >
-                Add Task
-              </Button>
-            </View>
+
+          {/* Task Input */}
+          <View style={styles.inputContainer}>
+            <Button 
+              mode="outlined" 
+              icon="microphone" 
+              onPress={() => {}}
+              style={styles.inputButton}
+              textColor="#000"
+            >
+              Voice Input
+            </Button>
+            <Button 
+              mode="outlined"
+              icon="plus"
+              onPress={() => {}}
+              style={styles.inputButton}
+              textColor="#000"
+            >
+              Add Task
+            </Button>
+          </View>
+
+          {/* Task List */}
+          <View style={styles.taskList}>
+            <Text style={styles.sectionTitle}>Today's Tasks</Text>
             <List.Section>
-              <Pressable onPress={() => handleTaskPress('task1')}>
-                <List.Item
-                  title="Review Project Proposal"
-                  description="High Priority • Due 2:00 PM"
-                  left={props => <List.Icon {...props} icon="checkbox-blank-circle-outline" />}
-                />
-              </Pressable>
-              <Pressable onPress={() => handleTaskPress('task2')}>
-                <List.Item
-                  title="Team Meeting"
-                  description="Medium Priority • Due 3:30 PM"
-                  left={props => <List.Icon {...props} icon="checkbox-blank-circle-outline" />}
-                />
-              </Pressable>
-              <Pressable onPress={() => handleTaskPress('task3')}>
-                <List.Item
-                  title="Exercise"
-                  description="Low Priority • Due 6:00 PM"
-                  left={props => <List.Icon {...props} icon="checkbox-blank-circle-outline" />}
-                />
-              </Pressable>
+              {tasks.map((task) => (
+                <Link key={task.id} href={`/task-detail/${task.id}`} asChild>
+                  <List.Item
+                    title={task.title}
+                    titleStyle={styles.taskTitle}
+                    description={() => (
+                      <View style={styles.taskMeta}>
+                        <View style={styles.tagContainer}>
+                          <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
+                            <MaterialCommunityIcons 
+                              name={getCategoryIcon(task.category)} 
+                              size={14} 
+                              color={getCategoryColor(task.category)} 
+                              style={styles.tagIcon}
+                            />
+                            <Text style={[styles.tagText, { color: getCategoryColor(task.category) }]}>
+                              {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                            </Text>
+                          </View>
+                          <View style={[styles.tag, { backgroundColor: `${getPriorityColor(task.priority)}15` }]}>
+                            <Text style={[styles.tagText, { color: getPriorityColor(task.priority) }]}>
+                              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.timeContainer}>
+                          <MaterialCommunityIcons name="clock-outline" size={14} color="#666" />
+                          <Text style={styles.timeText}>{task.startTime} - {task.endTime}</Text>
+                        </View>
+                      </View>
+                    )}
+                    left={props => (
+                      <List.Icon 
+                        {...props} 
+                        icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                        color={task.completed ? "#30D158" : "#666"}
+                      />
+                    )}
+                    style={styles.taskItem}
+                  />
+                </Link>
+              ))}
             </List.Section>
           </View>
 
           {/* Analytics Section */}
           <View style={styles.analyticsContainer}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>Analytics Insights</Text>
+            <Text style={styles.sectionTitle}>Analytics Insights</Text>
             
             {/* Weekly Performance */}
             <View style={styles.analyticsCard}>
@@ -253,8 +368,8 @@ export default function HomeScreen() {
                           style={[
                             styles.taskDistributionBar, 
                             { 
-                              width: `${(data.timeSpent / 15) * 100}%`, // 15 is max hours
-                              backgroundColor: getTaskCategoryColor(category)
+                              width: `${(data.timeSpent / 15) * 100}%`,
+                              backgroundColor: getCategoryColor(category as Category)
                             }
                           ]} 
                         />
@@ -313,33 +428,74 @@ export default function HomeScreen() {
   );
 }
 
-const getTaskCategoryColor = (category: string) => {
-  const colors = {
-    work: '#4CAF50',
-    study: '#2196F3',
-    personal: '#FF9800',
-    health: '#E91E63',
-    social: '#9C27B0',
-  };
-  return colors[category] || '#000';
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
   surface: {
-    flex: 1,
+    padding: 16,
+  },
+  statusBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
     backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusIcon: {
+    fontSize: 20,
+  },
+  statusValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  statusLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  statusDivider: {
+    width: 1,
+    backgroundColor: '#f0f0f0',
+    height: '100%',
+  },
+  contextContainer: {
+    marginBottom: 24,
+    backgroundColor: '#f8f9ff',
+    padding: 16,
+    borderRadius: 12,
+  },
+  greeting: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  insightContainer: {
+    gap: 8,
+  },
+  insightText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  insightHighlight: {
+    fontWeight: '600',
+  },
+  breakReminder: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
+    marginBottom: 24,
   },
   stat: {
     alignItems: 'center',
@@ -354,30 +510,67 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-  tasksContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  taskHeader: {
+  inputContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 24,
+  },
+  inputButton: {
+    flex: 1,
+    borderColor: '#000',
+  },
+  taskList: {
+    flex: 1,
+    marginBottom: 24,
   },
   sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
+    marginBottom: 12,
   },
-  addButton: {
-    borderColor: '#000',
-    borderRadius: 8,
+  taskItem: {
+    paddingLeft: 0,
+    paddingRight: 0,
   },
-  addButtonLabel: {
-    fontSize: 14,
-    color: '#000',
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  taskMeta: {
+    flexDirection: 'column',
+    gap: 8,
+    marginTop: 4,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  tagIcon: {
+    marginRight: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#666',
   },
   analyticsContainer: {
-    padding: 16,
+    marginTop: 8,
   },
   analyticsCard: {
     marginTop: 16,
@@ -403,54 +596,6 @@ const styles = StyleSheet.create({
   weeklyStats: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  focusStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  focusStat: {
-    alignItems: 'center',
-  },
-  focusValue: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  focusLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  completionRate: {
-    marginTop: 12,
-  },
-  completionBar: {
-    height: 24,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  completionFill: {
-    height: '100%',
-  },
-  completionLegend: {
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#666',
   },
   productiveTimeItem: {
     marginBottom: 12,
@@ -487,6 +632,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4CAF50',
   },
+  productivityStats: {
+    alignItems: 'flex-end',
+  },
+  tasksCompleted: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
   taskDistribution: {
     marginTop: 12,
   },
@@ -511,26 +664,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  taskDistributionBar: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#4CAF50',
-    flex: 1,
-    marginRight: 8,
-  },
-  taskDistributionTime: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 8,
-  },
-  productivityStats: {
-    alignItems: 'flex-end',
-  },
-  tasksCompleted: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
   taskDistributionBarWrapper: {
     flex: 1,
     backgroundColor: '#f0f0f0',
@@ -538,59 +671,62 @@ const styles = StyleSheet.create({
     marginRight: 8,
     height: 12,
   },
-  contextContainer: {
-    padding: 16,
-    backgroundColor: '#f8f9ff',
+  taskDistributionBar: {
+    height: '100%',
+    borderRadius: 6,
   },
-  greeting: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  insightContainer: {
-    gap: 8,
-  },
-  insightText: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
-  },
-  insightHighlight: {
-    fontWeight: '600',
-  },
-  breakReminder: {
-    fontSize: 14,
+  taskDistributionTime: {
+    fontSize: 12,
     color: '#666',
-    marginTop: 4,
+    marginLeft: 8,
   },
-  statusBar: {
+  completionRate: {
+    marginTop: 12,
+  },
+  completionBar: {
+    height: 24,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    overflow: 'hidden',
   },
-  statusItem: {
+  completionFill: {
+    height: '100%',
+  },
+  completionLegend: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  statusIcon: {
-    fontSize: 20,
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
   },
-  statusValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  statusLabel: {
+  legendText: {
     fontSize: 12,
     color: '#666',
   },
-  statusDivider: {
-    width: 1,
-    backgroundColor: '#f0f0f0',
-    height: '100%',
+  focusStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  focusStat: {
+    alignItems: 'center',
+  },
+  focusValue: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  focusLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
 });
 

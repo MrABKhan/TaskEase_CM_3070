@@ -29,7 +29,16 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="home-outline" size={size} color={color} />
             ),
-            href: '/',
+          }}
+        />
+        <Tabs.Screen
+          name="calendar"
+          options={{
+            title: 'Calendar',
+            tabBarLabel: 'Calendar',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="calendar-month-outline" size={size} color={color} />
+            ),
           }}
         />
         <Tabs.Screen
@@ -40,7 +49,6 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="timer-outline" size={size} color={color} />
             ),
-            href: '/focus',
           }}
         />
         <Tabs.Screen
@@ -51,7 +59,6 @@ export default function TabLayout() {
             tabBarIcon: ({ color, size }) => (
               <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
             ),
-            href: '/settings',
           }}
         />
       </Tabs>
