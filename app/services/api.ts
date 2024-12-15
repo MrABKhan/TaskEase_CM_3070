@@ -135,7 +135,6 @@ const api = {
       const response = await axios.post(`${API_URL}/tasks`, {
         ...taskData,
         userId: TEMP_USER_ID,
-        date: new Date().toISOString(),
         notes: [],
         tags: [],
       });

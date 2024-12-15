@@ -19,8 +19,12 @@ export default function CalendarScreen() {
       setLoading(true);
       const tasks = await api.getTasks({ date });
       setSelectedTasks(tasks.filter(task => {
-        const taskDate = new Date(task.date).toISOString().split('T')[0];
-        return taskDate === date;
+        // Adjust for timezone when comparing dates
+        const taskDate = new Date(task.date);
+        const compareDate = new Date(date);
+        return taskDate.getFullYear() === compareDate.getFullYear() &&
+               taskDate.getMonth() === compareDate.getMonth() &&
+               taskDate.getDate() === compareDate.getDate();
       }));
     } catch (error) {
       console.error('Error loading tasks for date:', error);
@@ -37,11 +41,13 @@ export default function CalendarScreen() {
       
       // Group tasks by date
       const tasksByDate = tasks.reduce((acc: Record<string, Task[]>, task: Task) => {
-        const date = new Date(task.date).toISOString().split('T')[0];
-        if (!acc[date]) {
-          acc[date] = [];
+        // Adjust for timezone when grouping tasks
+        const taskDate = new Date(task.date);
+        const dateKey = taskDate.toISOString().split('T')[0];
+        if (!acc[dateKey]) {
+          acc[dateKey] = [];
         }
-        acc[date].push(task);
+        acc[dateKey].push(task);
         return acc;
       }, {});
 

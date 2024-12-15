@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
-import { IconButton, TextInput, Menu, Text, List, Checkbox } from 'react-native-paper';
+import { IconButton, TextInput, Menu, Text, List } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { router } from 'expo-router';
@@ -30,6 +30,8 @@ export default function NewTaskScreen() {
   const [endDate, setEndDate] = useState(new Date(new Date().setHours(new Date().getHours() + 1)));
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [subtasks, setSubtasks] = useState<SubTask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -90,17 +92,87 @@ export default function NewTaskScreen() {
     }
   };
 
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(false);
+    if (date && event.type === 'set') {
+      // Keep the selected date but maintain current time selections
+      const newSelectedDate = new Date(date);
+      const currentStartDate = new Date(startDate);
+      const currentEndDate = new Date(endDate);
+
+      // Update selected date
+      setSelectedDate(newSelectedDate);
+
+      // Update start date with new date but keep current time
+      const newStartDate = new Date(newSelectedDate);
+      newStartDate.setHours(currentStartDate.getHours(), currentStartDate.getMinutes(), 0, 0);
+      setStartDate(newStartDate);
+
+      // Update end date with new date but keep current time
+      const newEndDate = new Date(newSelectedDate);
+      newEndDate.setHours(currentEndDate.getHours(), currentEndDate.getMinutes(), 0, 0);
+      setEndDate(newEndDate);
+    }
+  };
+
+  const handleStartTimeChange = (event: any, date?: Date) => {
+    setShowStartPicker(false);
+    if (date && event.type === 'set') {
+      // Create new date with selected date and new time
+      const newStartDate = new Date(selectedDate);
+      newStartDate.setHours(date.getHours(), date.getMinutes(), 0, 0);
+      setStartDate(newStartDate);
+
+      // If start time is later than end time, adjust end time
+      if (newStartDate > endDate) {
+        const newEndDate = new Date(newStartDate);
+        newEndDate.setHours(newStartDate.getHours() + 1, newStartDate.getMinutes(), 0, 0);
+        setEndDate(newEndDate);
+      }
+    }
+  };
+
+  const handleEndTimeChange = (event: any, date?: Date) => {
+    setShowEndPicker(false);
+    if (date && event.type === 'set') {
+      // Create new date with selected date and new time
+      const newEndDate = new Date(selectedDate);
+      newEndDate.setHours(date.getHours(), date.getMinutes(), 0, 0);
+      setEndDate(newEndDate);
+    }
+  };
+
   const handleCreateTask = async () => {
     try {
       setIsLoading(true);
+
+      // Create a new date object for the selected date at midnight UTC
+      const taskDate = new Date(selectedDate);
+      taskDate.setUTCHours(0, 0, 0, 0);
+
+      // Create start and end times on the selected date
+      const taskStartTime = new Date(selectedDate);
+      taskStartTime.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
+
+      const taskEndTime = new Date(selectedDate);
+      taskEndTime.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
 
       const taskData = {
         title: title.trim(),
         description: description.trim(),
         category,
         priority,
-        startTime: format(startDate, 'HH:mm'),
-        endTime: format(endDate, 'HH:mm'),
+        date: taskDate.toISOString(),
+        startTime: format(taskStartTime, 'HH:mm'),
+        endTime: format(taskEndTime, 'HH:mm'),
         completed: false,
         subtasks: subtasks.map(subtask => ({
           id: subtask.id,
@@ -109,8 +181,17 @@ export default function NewTaskScreen() {
         })),
       };
 
+      console.log('Creating task with data:', {
+        ...taskData,
+        dateFormatted: new Date(taskData.date).toLocaleString(),
+        startTimeFormatted: taskData.startTime,
+        endTimeFormatted: taskData.endTime,
+        rawSelectedDate: selectedDate,
+        rawStartDate: startDate,
+        rawEndDate: endDate,
+      });
+
       await api.createTask(taskData);
-      
       router.back();
     } catch (error) {
       console.error('Error creating task:', error);
@@ -303,28 +384,68 @@ export default function NewTaskScreen() {
             </Menu>
           </View>
 
-          {/* Time Selection */}
+          {/* Date and Time Selection */}
           <View style={styles.timeContainer}>
             <Pressable
-              onPress={() => setShowStartPicker(true)}
+              onPress={() => setShowDatePicker(true)}
               style={styles.timeButton}
             >
-              <MaterialCommunityIcons name="clock-start" size={20} color="#666" />
+              <MaterialCommunityIcons name="calendar" size={20} color="#666" />
               <Text style={styles.timeButtonText}>
-                Starts: {format(startDate, 'HH:mm')}
+                {formatDate(selectedDate)}
               </Text>
+              <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
             </Pressable>
 
             <Pressable
-              onPress={() => setShowEndPicker(true)}
-              style={styles.timeButton}
+              onPress={() => setShowStartPicker(true)}
+              style={[styles.timeButton, { backgroundColor: '#FFF5E6' }]}
             >
-              <MaterialCommunityIcons name="clock-end" size={20} color="#666" />
-              <Text style={styles.timeButtonText}>
-                Ends: {format(endDate, 'HH:mm')}
-              </Text>
+              <MaterialCommunityIcons name="clock-outline" size={20} color="#FF9F0A" />
+              <View style={styles.timeWrapper}>
+                <Text style={[styles.timeButtonText, { color: '#FF9F0A' }]}>
+                  {format(startDate, 'HH:mm')}
+                </Text>
+                <Text style={[styles.timeButtonText, { color: '#FF9F0A' }]}> - </Text>
+                <Text 
+                  style={[styles.timeButtonText, { color: '#FF9F0A' }]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setShowEndPicker(true);
+                  }}
+                >
+                  {format(endDate, 'HH:mm')}
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-down" size={16} color="#FF9F0A" />
             </Pressable>
           </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              onChange={handleDateChange}
+            />
+          )}
+
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDate}
+              mode="time"
+              is24Hour={true}
+              onChange={handleStartTimeChange}
+            />
+          )}
+
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDate}
+              mode="time"
+              is24Hour={true}
+              onChange={handleEndTimeChange}
+            />
+          )}
 
           {/* Subtasks Section */}
           <View style={styles.subtasksContainer}>
@@ -379,37 +500,6 @@ export default function NewTaskScreen() {
               />
             </List.Section>
           </View>
-
-          {showStartPicker && (
-            <DateTimePicker
-              value={startDate}
-              mode="time"
-              is24Hour={true}
-              onChange={(event, date) => {
-                setShowStartPicker(false);
-                if (date) {
-                  setStartDate(date);
-                  if (date > endDate) {
-                    setEndDate(new Date(date.getTime() + 60 * 60 * 1000));
-                  }
-                }
-              }}
-            />
-          )}
-
-          {showEndPicker && (
-            <DateTimePicker
-              value={endDate}
-              mode="time"
-              is24Hour={true}
-              onChange={(event, date) => {
-                setShowEndPicker(false);
-                if (date) {
-                  setEndDate(date);
-                }
-              }}
-            />
-          )}
         </View>
       </ScrollView>
     </View>
@@ -492,6 +582,10 @@ const styles = StyleSheet.create({
   timeButtonText: {
     fontSize: 14,
     color: '#666',
+  },
+  timeWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   subtasksContainer: {
     marginTop: 24,
