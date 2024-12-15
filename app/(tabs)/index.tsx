@@ -2,8 +2,8 @@ import { View, ScrollView, Pressable } from 'react-native';
 import { Text, Surface, Button, List, IconButton } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
@@ -23,13 +23,15 @@ export default function TabOneScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [])
+  );
 
   const loadTasks = async () => {
     try {
-      const fetchedTasks = await api.getTasks();
+      const fetchedTasks = await api.getTodayTasks();
       setTasks(fetchedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -221,87 +223,121 @@ export default function TabOneScreen() {
 
           {/* Task List */}
           <View style={styles.taskList}>
-            <Text style={styles.sectionTitle}>Today's Tasks</Text>
-            <List.Section>
-              {tasks.map((task) => (
-                <View key={task.id} style={styles.taskItemContainer}>
-                  <Pressable
-                    style={styles.checkboxContainer}
-                    onPress={() => {
-                      handleTaskComplete(task.id, !task.completed);
-                    }}
-                  >
-                    <List.Icon 
-                      icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
-                      color={task.completed ? "#30D158" : "#666"}
-                    />
-                  </Pressable>
-                  <Link 
-                    href={`/task-detail/${task.id}`} 
-                    asChild 
-                    style={styles.taskContent}
-                  >
-                    <Pressable>
-                      <List.Item
-                        title={task.title}
-                        titleStyle={[
-                          styles.taskTitle,
-                          task.completed && styles.taskTitleCompleted
-                        ]}
-                        description={() => (
-                          <View style={[
-                            styles.taskMeta,
-                            task.completed && styles.taskMetaCompleted
-                          ]}>
-                            <View style={styles.tagContainer}>
-                              <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
-                                <MaterialCommunityIcons 
-                                  name={getCategoryIcon(task.category)} 
-                                  size={14} 
-                                  color={task.completed ? '#999' : getCategoryColor(task.category)} 
-                                  style={styles.tagIcon}
-                                />
-                                <Text style={[
-                                  styles.tagText, 
-                                  { color: task.completed ? '#999' : getCategoryColor(task.category) }
-                                ]}>
-                                  {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
-                                </Text>
-                              </View>
+            <View style={styles.taskListHeader}>
+              <View style={styles.taskListHeaderLeft}>
+                <Text style={styles.sectionTitle}>Today's Tasks</Text>
+              </View>
+              <View style={styles.taskListHeaderRight}>
+                <MaterialCommunityIcons name="calendar" size={16} color="#666" style={styles.dateIcon} />
+                <Text style={styles.dateText} numberOfLines={1}>
+                  {new Date().toLocaleDateString('en-US', { 
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </Text>
+              </View>
+            </View>
+            {tasks.length > 0 ? (
+              <>
+                <List.Section>
+                  {tasks.map((task) => (
+                    <View key={task.id} style={styles.taskItemContainer}>
+                      <Pressable
+                        style={styles.checkboxContainer}
+                        onPress={() => {
+                          handleTaskComplete(task.id, !task.completed);
+                        }}
+                      >
+                        <List.Icon 
+                          icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                          color={task.completed ? "#30D158" : "#666"}
+                        />
+                      </Pressable>
+                      <Link 
+                        href={`/task-detail/${task.id}`} 
+                        asChild 
+                        style={styles.taskContent}
+                      >
+                        <Pressable>
+                          <List.Item
+                            title={task.title}
+                            titleStyle={[
+                              styles.taskTitle,
+                              task.completed && styles.taskTitleCompleted
+                            ]}
+                            description={() => (
                               <View style={[
-                                styles.tag, 
-                                { backgroundColor: task.completed ? '#f0f0f0' : `${getPriorityColor(task.priority)}15` }
+                                styles.taskMeta,
+                                task.completed && styles.taskMetaCompleted
                               ]}>
-                                <Text style={[
-                                  styles.tagText,
-                                  { color: task.completed ? '#999' : getPriorityColor(task.priority) }
-                                ]}>
-                                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                </Text>
+                                <View style={styles.tagContainer}>
+                                  <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
+                                    <MaterialCommunityIcons 
+                                      name={getCategoryIcon(task.category)} 
+                                      size={14} 
+                                      color={task.completed ? '#999' : getCategoryColor(task.category)} 
+                                      style={styles.tagIcon}
+                                    />
+                                    <Text style={[
+                                      styles.tagText, 
+                                      { color: task.completed ? '#999' : getCategoryColor(task.category) }
+                                    ]}>
+                                      {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                                    </Text>
+                                  </View>
+                                  <View style={[
+                                    styles.tag, 
+                                    { backgroundColor: task.completed ? '#f0f0f0' : `${getPriorityColor(task.priority)}15` }
+                                  ]}>
+                                    <Text style={[
+                                      styles.tagText,
+                                      { color: task.completed ? '#999' : getPriorityColor(task.priority) }
+                                    ]}>
+                                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View style={styles.timeContainer}>
+                                  <MaterialCommunityIcons 
+                                    name="clock-outline" 
+                                    size={14} 
+                                    color={task.completed ? '#999' : '#666'} 
+                                  />
+                                  <Text style={[
+                                    styles.timeText,
+                                    task.completed && styles.timeTextCompleted
+                                  ]}>
+                                    {task.startTime} - {task.endTime}
+                                  </Text>
+                                </View>
                               </View>
-                            </View>
-                            <View style={styles.timeContainer}>
-                              <MaterialCommunityIcons 
-                                name="clock-outline" 
-                                size={14} 
-                                color={task.completed ? '#999' : '#666'} 
-                              />
-                              <Text style={[
-                                styles.timeText,
-                                task.completed && styles.timeTextCompleted
-                              ]}>
-                                {task.startTime} - {task.endTime}
-                              </Text>
-                            </View>
-                          </View>
-                        )}
-                        style={styles.taskItem}
-                      />
-                    </Pressable>
-                  </Link>
-                </View>
-              ))}
-            </List.Section>
+                            )}
+                            style={styles.taskItem}
+                          />
+                        </Pressable>
+                      </Link>
+                    </View>
+                  ))}
+                </List.Section>
+                <Link href="/calendar" asChild>
+                  <Pressable>
+                    {({ pressed }) => (
+                      <View style={[
+                        styles.showMoreContent,
+                        { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }
+                      ]}>
+                        <MaterialCommunityIcons name="calendar-month" size={16} color="#007AFF" />
+                        <Text style={styles.showMoreText}>View Upcoming Schedule</Text>
+                        <MaterialCommunityIcons name="chevron-right" size={16} color="#007AFF" />
+                      </View>
+                    )}
+                  </Pressable>
+                </Link>
+              </>
+            ) : (
+              <Text style={styles.emptyText}>No tasks scheduled for today</Text>
+            )}
           </View>
 
           {/* Analytics Section */}
@@ -1122,6 +1158,52 @@ const styles = StyleSheet.create({
   trendText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  taskListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingRight: 4,
+  },
+  taskListHeaderLeft: {
+    flex: 1,
+  },
+  taskListHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateIcon: {
+    marginRight: 2,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 24,
+  },
+  showMoreButton: {
+    marginTop: 16,
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#F8F8F8',
+  },
+  showMoreContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingTop: 12,
+    alignSelf: 'center',
+  },
+  showMoreText: {
+    fontSize: 14,
+    color: '#007AFF',
   },
 });
 
