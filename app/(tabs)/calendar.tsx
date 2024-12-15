@@ -1,185 +1,137 @@
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { Text, List } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
-import { useState } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
-
-type Category = 'work' | 'health' | 'study' | 'leisure';
-type Priority = 'high' | 'medium' | 'low';
-
-interface Task {
-  id: string;
-  title: string;
-  category: Category;
-  priority: Priority;
-  startTime: string;
-  endTime: string;
-  completed: boolean;
-}
-
-// Helper functions from index.tsx
-const getCategoryColor = (category: Category): string => {
-  switch (category) {
-    case 'work':
-      return '#007AFF';
-    case 'health':
-      return '#30D158';
-    case 'study':
-      return '#5856D6';
-    case 'leisure':
-      return '#FF9F0A';
-    default:
-      return '#666';
-  }
-};
-
-const getCategoryIcon = (category: Category): string => {
-  switch (category) {
-    case 'work':
-      return 'briefcase-outline';
-    case 'health':
-      return 'heart-outline';
-    case 'study':
-      return 'book-outline';
-    case 'leisure':
-      return 'gamepad-variant-outline';
-    default:
-      return 'tag-outline';
-  }
-};
-
-const getPriorityColor = (priority: Priority): string => {
-  switch (priority) {
-    case 'high':
-      return '#FF453A';
-    case 'medium':
-      return '#FF9F0A';
-    case 'low':
-      return '#30D158';
-    default:
-      return '#666';
-  }
-};
+import { useState, useCallback } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import TaskList from '../components/TaskList';
+import api, { Task } from '../services/api';
+import { getCategoryColor } from '../utils/taskUtils';
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
+  const [markedDates, setMarkedDates] = useState<any>({});
+  const [loading, setLoading] = useState(true);
 
-  // Dummy detailed tasks data
-  const detailedTasks = {
-    '2024-12-02': [
-      {
-        id: '1',
-        title: 'Project Review',
-        category: 'work',
-        priority: 'high',
-        startTime: '10:00 AM',
-        endTime: '11:30 AM',
-        completed: false
-      },
-      {
-        id: '2',
-        title: 'Team Meeting',
-        category: 'work',
-        priority: 'medium',
-        startTime: '2:00 PM',
-        endTime: '3:00 PM',
-        completed: false
-      }
-    ],
-    '2024-12-05': [
-      {
-        id: '3',
-        title: 'Gym Session',
-        category: 'health',
-        priority: 'medium',
-        startTime: '7:00 AM',
-        endTime: '8:30 AM',
-        completed: false
-      }
-    ],
-    '2024-12-10': [
-      {
-        id: '4',
-        title: 'Study React Native',
-        category: 'study',
-        priority: 'high',
-        startTime: '9:00 AM',
-        endTime: '11:00 AM',
-        completed: false
-      },
-      {
-        id: '5',
-        title: 'Lunch with Team',
-        category: 'leisure',
-        priority: 'low',
-        startTime: '12:00 PM',
-        endTime: '1:30 PM',
-        completed: false
-      },
-      {
-        id: '6',
-        title: 'Client Meeting',
-        category: 'work',
-        priority: 'high',
-        startTime: '2:00 PM',
-        endTime: '3:30 PM',
-        completed: false
-      }
-    ]
+  // Load tasks for a specific date
+  const loadTasksForDate = async (date: string) => {
+    try {
+      setLoading(true);
+      const tasks = await api.getTasks({ date });
+      setSelectedTasks(tasks.filter(task => {
+        const taskDate = new Date(task.date).toISOString().split('T')[0];
+        return taskDate === date;
+      }));
+    } catch (error) {
+      console.error('Error loading tasks for date:', error);
+      setSelectedTasks([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Calendar marker data
-  const tasks = Object.keys(detailedTasks).reduce((acc, date) => {
-    acc[date] = {
-      marked: true,
-      dotColor: '#007AFF',
-      dots: detailedTasks[date].length
-    };
-    return acc;
-  }, {} as Record<string, { marked: boolean; dotColor: string; dots: number }>);
+  // Load tasks for the current month
+  const loadMonthTasks = async (month: string) => {
+    try {
+      const tasks = await api.getTasks({ month });
+      
+      // Group tasks by date
+      const tasksByDate = tasks.reduce((acc: Record<string, Task[]>, task: Task) => {
+        const date = new Date(task.date).toISOString().split('T')[0];
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(task);
+        return acc;
+      }, {});
 
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
+      // Create marked dates object for calendar
+      const marked = Object.keys(tasksByDate).reduce((acc, date) => {
+        acc[date] = {
+          marked: true,
+          dots: tasksByDate[date].map(task => ({
+            color: getCategoryColor(task.category)
+          })),
+          selected: date === selectedDate,
+          selectedColor: date === selectedDate ? '#007AFF' : undefined,
+          selectedTextColor: date === selectedDate ? '#ffffff' : undefined,
+        };
+        return acc;
+      }, {} as any);
 
-  // Merge today's styling with any existing tasks
-  const markedDates = Object.keys(tasks).reduce((acc, date) => {
-    acc[date] = {
-      marked: true,
-      dots: Array(tasks[date].dots).fill({ color: '#007AFF' }),
-      selected: date === selectedDate,
-      selectedColor: date === selectedDate ? '#007AFF' : undefined,
-      selectedTextColor: date === selectedDate ? '#ffffff' : undefined,
-    };
-    return acc;
-  }, {} as any);
-
-  // Add today's styling
-  markedDates[today] = {
-    ...markedDates[today],
-    selected: selectedDate !== today,
-    selectedColor: '#007AFF15',
-    selectedTextColor: '#007AFF',
-    marked: true,
-    dots: markedDates[today]?.dots || []
+      setMarkedDates(marked);
+    } catch (error) {
+      console.error('Error loading month tasks:', error);
+    }
   };
 
-  // Ensure selected date styling takes precedence
-  if (selectedDate && selectedDate !== today) {
-    markedDates[selectedDate] = {
-      ...markedDates[selectedDate],
-      selected: true,
-      selectedColor: '#007AFF',
-      selectedTextColor: '#ffffff',
-      marked: true,
-      dots: markedDates[selectedDate]?.dots || []
-    };
-  }
+  // Refresh calendar data
+  const refreshCalendarData = useCallback(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const currentDate = selectedDate || today;
+    
+    setSelectedDate(currentDate);
+    await Promise.all([
+      loadTasksForDate(currentDate),
+      loadMonthTasks(currentDate.substring(0, 7))
+    ]);
+  }, [selectedDate]);
 
-  const handleDayPress = (day: any) => {
-    setSelectedDate(day.dateString);
-    setSelectedTasks(detailedTasks[day.dateString] || []);
+  // Load initial data and refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshCalendarData();
+    }, [refreshCalendarData])
+  );
+
+  // Load tasks when month changes
+  const handleMonthChange = (month: any) => {
+    loadMonthTasks(month.dateString.substring(0, 7));
+  };
+
+  // Load tasks for selected date
+  const handleDayPress = async (day: any) => {
+    const newDate = day.dateString;
+    setSelectedDate(newDate);
+    loadTasksForDate(newDate);
+    
+    // Update marked dates to show selection
+    setMarkedDates(prev => ({
+      ...prev,
+      [newDate]: {
+        ...(prev[newDate] || {}),
+        selected: true,
+        selectedColor: '#007AFF',
+        selectedTextColor: '#ffffff',
+      }
+    }));
+  };
+
+  const handleTaskComplete = async (taskId: string, completed: boolean) => {
+    try {
+      await api.updateTask(taskId, { completed });
+      // Update local state
+      const updatedTasks = selectedTasks.map(t => 
+        t.id === taskId ? { ...t, completed } : t
+      );
+      setSelectedTasks(updatedTasks);
+      // Refresh calendar data to update dots
+      await loadMonthTasks(selectedDate.substring(0, 7));
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await api.deleteTask(taskId);
+      // Update local state
+      setSelectedTasks(tasks => tasks.filter(t => t.id !== taskId));
+      // Refresh calendar data to update dots
+      await loadMonthTasks(selectedDate.substring(0, 7));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
 
   return (
@@ -222,35 +174,37 @@ export default function CalendarScreen() {
                 borderRadius: 16,
                 width: 32,
                 height: 32,
-                position: 'absolute',
-                top: -5,
+                alignItems: 'center',
+                justifyContent: 'center',
               },
               today: {
                 backgroundColor: '#007AFF15',
                 borderRadius: 16,
                 width: 32,
                 height: 32,
-                position: 'absolute',
-                top: -5,
+                alignItems: 'center',
+                justifyContent: 'center',
               },
               base: {
                 width: 32,
                 height: 32,
                 alignItems: 'center',
-                paddingTop: 5,
+                justifyContent: 'center',
               },
               text: {
                 marginTop: 0,
                 fontSize: 14,
               },
               dots: {
-                marginTop: 20,
+                marginBottom: -2,
               }
             },
           }}
           markingType={'multi-dot'}
           markedDates={markedDates}
           onDayPress={handleDayPress}
+          onMonthChange={handleMonthChange}
+          initialDate={selectedDate}
         />
 
         <View style={styles.selectedDay}>
@@ -268,90 +222,14 @@ export default function CalendarScreen() {
         </View>
 
         <View style={styles.taskList}>
-          {selectedTasks.length > 0 ? (
-            <List.Section style={styles.taskSection}>
-              {selectedTasks.map((task) => (
-                <View key={task.id} style={styles.taskItemContainer}>
-                  <Pressable
-                    style={styles.checkboxContainer}
-                    onPress={() => {
-                      const updatedTasks = selectedTasks.map(t => 
-                        t.id === task.id ? { ...t, completed: !t.completed } : t
-                      );
-                      setSelectedTasks(updatedTasks);
-                    }}
-                  >
-                    <List.Icon 
-                      icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
-                      color={task.completed ? "#30D158" : "#666"}
-                    />
-                  </Pressable>
-                  <Link 
-                    href={`/task-detail/${task.id}`} 
-                    asChild 
-                    style={styles.taskContent}
-                  >
-                    <Pressable>
-                      <List.Item
-                        title={task.title}
-                        titleStyle={[
-                          styles.taskTitle,
-                          task.completed && styles.taskTitleCompleted
-                        ]}
-                        description={() => (
-                          <View style={[
-                            styles.taskMeta,
-                            task.completed && styles.taskMetaCompleted
-                          ]}>
-                            <View style={styles.tagContainer}>
-                              <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
-                                <MaterialCommunityIcons 
-                                  name={getCategoryIcon(task.category)} 
-                                  size={14} 
-                                  color={task.completed ? '#999' : getCategoryColor(task.category)} 
-                                  style={styles.tagIcon}
-                                />
-                                <Text style={[
-                                  styles.tagText, 
-                                  { color: task.completed ? '#999' : getCategoryColor(task.category) }
-                                ]}>
-                                  {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
-                                </Text>
-                              </View>
-                              <View style={[
-                                styles.tag, 
-                                { backgroundColor: task.completed ? '#f0f0f0' : `${getPriorityColor(task.priority)}15` }
-                              ]}>
-                                <Text style={[
-                                  styles.tagText,
-                                  { color: task.completed ? '#999' : getPriorityColor(task.priority) }
-                                ]}>
-                                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                </Text>
-                              </View>
-                            </View>
-                            <View style={styles.timeContainer}>
-                              <MaterialCommunityIcons 
-                                name="clock-outline" 
-                                size={14} 
-                                color={task.completed ? '#999' : '#666'} 
-                              />
-                              <Text style={[
-                                styles.timeText,
-                                task.completed && styles.timeTextCompleted
-                              ]}>
-                                {task.startTime} - {task.endTime}
-                              </Text>
-                            </View>
-                          </View>
-                        )}
-                        style={styles.taskItem}
-                      />
-                    </Pressable>
-                  </Link>
-                </View>
-              ))}
-            </List.Section>
+          {loading ? (
+            <Text style={styles.noTasksText}>Loading tasks...</Text>
+          ) : selectedTasks.length > 0 ? (
+            <TaskList
+              tasks={selectedTasks}
+              onTaskComplete={handleTaskComplete}
+              onTaskDelete={handleDeleteTask}
+            />
           ) : (
             <Text style={styles.noTasksText}>No tasks scheduled for this day</Text>
           )}
@@ -385,75 +263,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: 16,
   },
-  taskSection: {
-    paddingHorizontal: 16,
-  },
   noTasksText: {
     color: '#666',
     fontSize: 16,
     textAlign: 'center',
     marginTop: 24,
-  },
-  taskItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkboxContainer: {
-    paddingLeft: 0,
-    paddingRight: 8,
-  },
-  taskContent: {
-    flex: 1,
-  },
-  taskItem: {
-    paddingLeft: 0,
-    paddingRight: 0,
-  },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  taskTitleCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#999',
-  },
-  taskMeta: {
-    flexDirection: 'column',
-    gap: 8,
-    marginTop: 4,
-  },
-  taskMetaCompleted: {
-    opacity: 0.7,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  tagIcon: {
-    marginRight: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  timeTextCompleted: {
-    color: '#999',
   },
 }); 

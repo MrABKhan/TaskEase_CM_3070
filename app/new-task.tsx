@@ -329,50 +329,55 @@ export default function NewTaskScreen() {
           {/* Subtasks Section */}
           <View style={styles.subtasksContainer}>
             <Text style={styles.sectionTitle}>Subtasks</Text>
-            
-            {/* Add Subtask Input */}
-            <View style={styles.addSubtaskContainer}>
-              <TextInput
-                mode="flat"
-                value={newSubtask}
-                onChangeText={setNewSubtask}
-                placeholder="Add a subtask"
-                style={styles.subtaskInput}
-                right={
-                  <TextInput.Icon
-                    icon="plus"
-                    onPress={handleAddSubtask}
-                    disabled={!newSubtask.trim()}
+            <List.Section style={styles.subtasksList}>
+              {subtasks.map((subtask) => (
+                <List.Item
+                  key={subtask.id}
+                  title={subtask.title}
+                  titleStyle={[
+                    styles.subtaskText,
+                    subtask.completed && styles.subtaskCompleted
+                  ]}
+                  onPress={() => handleToggleSubtask(subtask.id)}
+                  left={props => (
+                    <List.Icon 
+                      {...props} 
+                      icon={subtask.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                      color={subtask.completed ? "#30D158" : "#666"}
+                    />
+                  )}
+                  right={props => (
+                    <IconButton
+                      {...props}
+                      icon="close"
+                      size={20}
+                      onPress={() => handleRemoveSubtask(subtask.id)}
+                    />
+                  )}
+                />
+              ))}
+              <List.Item
+                title={
+                  <TextInput
+                    placeholder="Add subtask"
+                    value={newSubtask}
+                    onChangeText={setNewSubtask}
+                    onSubmitEditing={handleAddSubtask}
+                    style={styles.subtaskInput}
+                    placeholderTextColor="#999"
+                    theme={{ colors: { primary: '#000' } }}
                   />
                 }
-                onSubmitEditing={handleAddSubtask}
+                left={props => (
+                  <List.Icon 
+                    {...props} 
+                    icon="checkbox-blank-circle-outline"
+                    color="#999"
+                  />
+                )}
+                style={styles.addSubtaskItem}
               />
-            </View>
-
-            {/* Subtasks List */}
-            <View style={styles.subtasksList}>
-              {subtasks.map((subtask) => (
-                <View key={subtask.id} style={styles.subtaskItem}>
-                  <Checkbox.Android
-                    status={subtask.completed ? 'checked' : 'unchecked'}
-                    onPress={() => handleToggleSubtask(subtask.id)}
-                  />
-                  <Text 
-                    style={[
-                      styles.subtaskText,
-                      subtask.completed && styles.subtaskCompleted
-                    ]}
-                  >
-                    {subtask.title}
-                  </Text>
-                  <IconButton
-                    icon="close"
-                    size={20}
-                    onPress={() => handleRemoveSubtask(subtask.id)}
-                  />
-                </View>
-              ))}
-            </View>
+            </List.Section>
           </View>
 
           {showStartPicker && (
@@ -432,88 +437,88 @@ const styles = StyleSheet.create({
   titleInput: {
     fontSize: 24,
     backgroundColor: 'transparent',
+    paddingHorizontal: 0,
   },
   descriptionContainer: {
     marginBottom: 24,
   },
   descriptionInput: {
     fontSize: 16,
+    backgroundColor: 'transparent',
     minHeight: 120,
     maxHeight: 200,
   },
   tagsContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
     marginBottom: 24,
   },
   tagButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
   },
   tagButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    color: '#666',
   },
   menuContent: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginTop: 8,
+    borderRadius: 8,
+    marginTop: 4,
   },
   menuItem: {
-    height: 44,
+    height: 40,
   },
   timeContainer: {
-    gap: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 24,
   },
   timeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
   },
   timeButtonText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: 14,
+    color: '#666',
   },
   subtasksContainer: {
     marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 16,
   },
-  addSubtaskContainer: {
-    marginBottom: 16,
-  },
-  subtaskInput: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-  },
   subtasksList: {
-    gap: 8,
-  },
-  subtaskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    paddingLeft: 8,
+    marginTop: -8,
   },
   subtaskText: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: 12,
+    fontSize: 14,
   },
   subtaskCompleted: {
     textDecorationLine: 'line-through',
     color: '#999',
+  },
+  subtaskInput: {
+    backgroundColor: 'transparent',
+    fontSize: 14,
+    height: 20,
+    padding: 0,
+    color: '#666',
+  },
+  addSubtaskItem: {
+    opacity: 0.6,
   },
 }); 

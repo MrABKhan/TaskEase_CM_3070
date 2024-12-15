@@ -153,6 +153,83 @@ const api = {
       throw error;
     }
   },
+
+  // Get tasks for a specific month or date
+  getTasks: async (params: { month?: string; date?: string } = {}) => {
+    console.log('📤 Fetching tasks with params:', { ...params, userId: TEMP_USER_ID });
+    try {
+      const response = await axios.get(`${API_URL}/tasks`, {
+        params: { ...params, userId: TEMP_USER_ID }
+      });
+      // Handle both array and object responses
+      const tasksData = response.data.tasks || response.data || [];
+      console.log('📥 Raw tasks response:', tasksData);
+      
+      const mappedTasks = tasksData.map((task: any) => ({
+        id: task._id || task.id,
+        title: task.title,
+        description: task.description,
+        category: task.category,
+        priority: task.priority,
+        startTime: task.startTime,
+        endTime: task.endTime,
+        date: task.date,
+        completed: task.completed,
+        notes: task.notes || [],
+        subtasks: task.subtasks || [],
+        tags: task.tags || [],
+      }));
+      
+      console.log('🔄 Mapped tasks:', mappedTasks);
+      return mappedTasks;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        console.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  // Get today's tasks
+  getTodayTasks: async () => {
+    console.log('📤 Fetching today\'s tasks for user:', TEMP_USER_ID);
+    try {
+      const response = await axios.get(`${API_URL}/tasks/today`, {
+        params: { userId: TEMP_USER_ID }
+      });
+      console.log('📥 Raw today\'s tasks response:', response.data);
+      
+      // Handle both array and object responses
+      const tasksData = response.data.tasks || response.data || [];
+      
+      const mappedTasks = tasksData.map((task: any) => ({
+        id: task._id || task.id,
+        title: task.title,
+        description: task.description,
+        category: task.category,
+        priority: task.priority,
+        startTime: task.startTime,
+        endTime: task.endTime,
+        date: task.date,
+        completed: task.completed,
+        notes: task.notes || [],
+        subtasks: task.subtasks || [],
+        tags: task.tags || [],
+      }));
+      
+      console.log('🔄 Mapped today\'s tasks:', mappedTasks);
+      return mappedTasks;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        console.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
 };
 
 export default api; 
