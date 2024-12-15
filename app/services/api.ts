@@ -128,6 +128,31 @@ const api = {
       throw error;
     }
   },
+
+  createTask: async (taskData: Partial<Task>) => {
+    console.log('📤 Creating new task:', taskData);
+    try {
+      const response = await axios.post(`${API_URL}/tasks`, {
+        ...taskData,
+        userId: TEMP_USER_ID,
+        date: new Date().toISOString(),
+        notes: [],
+        tags: [],
+      });
+      console.log('📥 Create task response:', response.data);
+      return {
+        ...response.data,
+        id: response.data._id
+      };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        console.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
 };
 
 export default api; 

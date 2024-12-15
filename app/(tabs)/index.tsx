@@ -1,4 +1,4 @@
-import { View, ScrollView, Pressable } from 'react-native';
+import { View, ScrollView, Pressable, Alert } from 'react-native';
 import { Text, Surface, Button, List, IconButton } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -52,6 +52,33 @@ export default function TabOneScreen() {
       console.error('Error updating task:', error);
       // Add error handling UI here
     }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    Alert.alert(
+      "Delete Task",
+      "Are you sure you want to delete this task?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.deleteTask(taskId);
+              // Refresh the task list
+              loadTasks();
+            } catch (error) {
+              console.error('Error deleting task:', error);
+              Alert.alert('Error', 'Failed to delete task. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Mock data - in real app this would come from AI analysis and user data
@@ -317,6 +344,16 @@ export default function TabOneScreen() {
                           />
                         </Pressable>
                       </Link>
+                      <IconButton
+                        icon="trash-can-outline"
+                        iconColor={task.completed ? '#CCCCCC' : '#666666'}
+                        size={20}
+                        onPress={() => handleDeleteTask(task.id)}
+                        style={[
+                          styles.deleteButton,
+                          task.completed && { opacity: 0.5 }
+                        ]}
+                      />
                     </View>
                   ))}
                 </List.Section>
@@ -1204,6 +1241,10 @@ const styles = StyleSheet.create({
   showMoreText: {
     fontSize: 14,
     color: '#007AFF',
+  },
+  deleteButton: {
+    margin: 0,
+    padding: 0,
   },
 });
 

@@ -2,14 +2,17 @@ import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { FAB } from 'react-native-paper';
 import { View, StyleSheet, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function TabLayout() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => {}}
+        onPress={() => router.push('/new-task')}
         color="#fff"
       />
       <Tabs
