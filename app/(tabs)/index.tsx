@@ -1,11 +1,11 @@
-import { View, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
-import { Text, Surface, Button, List, IconButton } from 'react-native-paper';
+import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { Text, Surface, Button, List, IconButton, ActivityIndicator } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import TaskList from '../components/TaskList';
+import { generateSmartContext } from '../services/smartContext';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
 type Priority = 'high' | 'medium' | 'low';
@@ -20,75 +20,34 @@ interface Task {
   completed: boolean;
 }
 
+interface SmartContext {
+  weather: {
+    icon: string;
+    temp: string;
+    condition: string;
+  };
+  urgentTasks: {
+    count: number;
+    nextDue: string;
+  };
+  focusStatus: {
+    state: string;
+    timeLeft: string;
+  };
+  energyLevel: string;
+  suggestedActivity: string;
+  nextBreak: string;
+  insight: string;
+  timestamp: string;
+  lastUpdated: string;
+}
+
 export default function TabOneScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const loadTasks = async () => {
-    try {
-      setLoading(true);
-      const fetchedTasks = await api.getTodayTasks();
-      setTasks(fetchedTasks);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-      // Add error handling UI here
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadTasks();
-    }, [])
-  );
-
-  const handleTaskComplete = async (taskId: string, completed: boolean) => {
-    try {
-      await api.updateTask(taskId, { completed });
-      const updatedTasks = tasks.map(t => 
-        t.id === taskId ? { ...t, completed } : t
-      );
-      setTasks(updatedTasks);
-    } catch (error) {
-      console.error('Error updating task:', error);
-      // Add error handling UI here
-    }
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    Alert.alert(
-      "Delete Task",
-      "Are you sure you want to delete this task?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.deleteTask(taskId);
-              // Refresh the task list
-              loadTasks();
-            } catch (error) {
-              console.error('Error deleting task:', error);
-              Alert.alert('Error', 'Failed to delete task. Please try again.');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  // Mock data - in real app this would come from AI analysis and user data
-  const userName = "Alex";
-  const timeOfDay = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
-
-  // Smart Context mock data
-  const contextData = {
+  const [refreshing, setRefreshing] = useState(false);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [contextData, setContextData] = useState<SmartContext>({
     weather: { icon: "☀️", temp: "22°", condition: "Clear skies" },
     urgentTasks: { count: 2, nextDue: "2:00 PM" },
     focusStatus: { state: "Peak", timeLeft: "45m" },
@@ -96,7 +55,90 @@ export default function TabOneScreen() {
     suggestedActivity: "creative work",
     nextBreak: "11:30 AM",
     insight: "You're most productive in the mornings. Consider tackling the project proposal now.",
+    timestamp: new Date().toISOString(),
+    lastUpdated: "00:00",
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [])
+  );
+
+  const loadTasks = async (forceRefresh: boolean = false) => {
+    try {
+      console.log('[SmartContext] Loading tasks...');
+      setContextLoading(true);
+      
+      const fetchedTasks = await api.getTodayTasks();
+      setTasks(fetchedTasks);
+
+      // Generate smart context when tasks are loaded
+      console.log('[SmartContext] Generating smart context for loaded tasks...');
+      const smartContext = await generateSmartContext(
+        fetchedTasks,
+        analyticsData,
+        contextData.weather,
+        forceRefresh
+      );
+      console.log('[SmartContext] Generated context:', smartContext);
+
+      // Update context data state
+      setContextData(smartContext);
+
+      console.log('[SmartContext] Tasks loaded successfully:', {
+        count: fetchedTasks.length,
+        completed: fetchedTasks.filter((t: Task) => t.completed).length,
+        categories: fetchedTasks.reduce((acc: Record<string, number>, t: Task) => {
+          acc[t.category] = (acc[t.category] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      });
+    } catch (error) {
+      console.error('[SmartContext] Error loading tasks:', error);
+    } finally {
+      setLoading(false);
+      setContextLoading(false);
+      setRefreshing(false);
+    }
   };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadTasks(true);
+  }, []);
+
+  const handleTaskComplete = async (taskId: string, completed: boolean) => {
+    try {
+      console.log('[SmartContext] Updating task:', { taskId, completed });
+      
+      await api.updateTask(taskId, { completed });
+      const updatedTasks = tasks.map(t => 
+        t.id === taskId ? { ...t, completed } : t
+      );
+      setTasks(updatedTasks);
+
+      // Regenerate smart context with updated tasks
+      setContextLoading(true);
+      const smartContext = await generateSmartContext(
+        updatedTasks,
+        analyticsData,
+        contextData.weather,
+        true // Force refresh
+      );
+      setContextData(smartContext);
+
+      console.log('[SmartContext] Task update successful');
+    } catch (error) {
+      console.error('[SmartContext] Error updating task:', error);
+    } finally {
+      setContextLoading(false);
+    }
+  };
+
+  // Mock data - in real app this would come from AI analysis and user data
+  const userName = "Alex";
+  const timeOfDay = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
 
   // Analytics mock data
   const analyticsData = {
@@ -178,9 +220,36 @@ export default function TabOneScreen() {
     }
   };
 
+  // Add logging for smart context data
+  useEffect(() => {
+    console.log('[SmartContext] Current Context:', {
+      timeOfDay,
+      weather: contextData.weather,
+      urgentTasks: contextData.urgentTasks,
+      focusStatus: contextData.focusStatus,
+      energyLevel: contextData.energyLevel,
+      suggestedActivity: contextData.suggestedActivity,
+      nextBreak: contextData.nextBreak,
+    });
+
+    console.log('[SmartContext] Analytics:', {
+      weeklyCompletion: analyticsData.weeklyCompletion,
+      focusSessionsWeek: analyticsData.focusSessionsWeek,
+      averageSessionLength: analyticsData.averageSessionLength,
+      productiveHours: analyticsData.productiveHours,
+      completionRate: analyticsData.completionRate,
+    });
+
+    console.log('[SmartContext] Quick Stats:', quickStats);
+  }, [contextData, analyticsData, quickStats, timeOfDay]);
+
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <Surface style={styles.surface} elevation={0}>
           {/* Status Bar */}
           <View style={styles.statusBar}>
@@ -211,7 +280,12 @@ export default function TabOneScreen() {
 
           {/* Smart Context */}
           <View style={styles.contextContainer}>
-            <Text style={styles.greeting}>Good {timeOfDay}, {userName}! 👋</Text>
+            <View style={styles.contextHeader}>
+              <Text style={styles.greeting}>Good {timeOfDay}, {userName}! 👋</Text>
+              {contextLoading && (
+                <ActivityIndicator size="small" style={styles.contextLoader} />
+              )}
+            </View>
             <View style={styles.insightContainer}>
               <Text style={styles.insightText}>
                 <Text style={styles.insightHighlight}>Today's Focus: </Text>
@@ -267,15 +341,88 @@ export default function TabOneScreen() {
                 </Text>
               </View>
             </View>
-            {loading ? (
-              <ActivityIndicator style={styles.loader} />
-            ) : tasks.length > 0 ? (
+            {tasks.length > 0 ? (
               <>
-                <TaskList
-                  tasks={tasks}
-                  onTaskComplete={handleTaskComplete}
-                  onTaskDelete={handleDeleteTask}
-                />
+                <List.Section>
+                  {tasks.map((task) => (
+                    <View key={task.id} style={styles.taskItemContainer}>
+                      <Pressable
+                        style={styles.checkboxContainer}
+                        onPress={() => {
+                          handleTaskComplete(task.id, !task.completed);
+                        }}
+                      >
+                        <List.Icon 
+                          icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                          color={task.completed ? "#30D158" : "#666"}
+                        />
+                      </Pressable>
+                      <Link 
+                        href={`/task-detail/${task.id}`} 
+                        asChild 
+                        style={styles.taskContent}
+                      >
+                        <Pressable>
+                          <List.Item
+                            title={task.title}
+                            titleStyle={[
+                              styles.taskTitle,
+                              task.completed && styles.taskTitleCompleted
+                            ]}
+                            description={() => (
+                              <View style={[
+                                styles.taskMeta,
+                                task.completed && styles.taskMetaCompleted
+                              ]}>
+                                <View style={styles.tagContainer}>
+                                  <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
+                                    <MaterialCommunityIcons 
+                                      name={getCategoryIcon(task.category)} 
+                                      size={14} 
+                                      color={task.completed ? '#999' : getCategoryColor(task.category)} 
+                                      style={styles.tagIcon}
+                                    />
+                                    <Text style={[
+                                      styles.tagText, 
+                                      { color: task.completed ? '#999' : getCategoryColor(task.category) }
+                                    ]}>
+                                      {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                                    </Text>
+                                  </View>
+                                  <View style={[
+                                    styles.tag, 
+                                    { backgroundColor: task.completed ? '#f0f0f0' : `${getPriorityColor(task.priority)}15` }
+                                  ]}>
+                                    <Text style={[
+                                      styles.tagText,
+                                      { color: task.completed ? '#999' : getPriorityColor(task.priority) }
+                                    ]}>
+                                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                    </Text>
+                                  </View>
+                                </View>
+                                <View style={styles.timeContainer}>
+                                  <MaterialCommunityIcons 
+                                    name="clock-outline" 
+                                    size={14} 
+                                    color={task.completed ? '#999' : '#666'} 
+                                  />
+                                  <Text style={[
+                                    styles.timeText,
+                                    task.completed && styles.timeTextCompleted
+                                  ]}>
+                                    {task.startTime} - {task.endTime}
+                                  </Text>
+                                </View>
+                              </View>
+                            )}
+                            style={styles.taskItem}
+                          />
+                        </Pressable>
+                      </Link>
+                    </View>
+                  ))}
+                </List.Section>
                 <Link href="/calendar" asChild>
                   <Pressable>
                     {({ pressed }) => (
@@ -1066,6 +1213,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   insightText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  insightDescription: {
     fontSize: 13,
     color: '#666',
     lineHeight: 18,
@@ -1161,12 +1312,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
   },
-  deleteButton: {
-    margin: 0,
-    padding: 0,
+  contextHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  loader: {
-    marginTop: 24,
+  contextLoader: {
+    marginLeft: 8,
+  },
+  lastUpdated: {
+    fontSize: 12,
+    color: '#666',
   },
 });
 
