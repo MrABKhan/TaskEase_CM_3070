@@ -1,89 +1,105 @@
-import React, { useState } from 'react';
-import { View, ScrollView, ViewProps } from 'react-native';
-import { Card } from '../../components/Card';
-import { Button } from '../../components/Button';
-import { Badge } from '../../components/Badge';
-import { ThemedText } from '../../components/ThemedText';
-
-interface Task {
-  title: string;
-  duration: number;
-  description?: string;
-}
+import { ScrollView, View } from 'react-native';
+import { Text, Card, FAB, Portal, Chip, IconButton } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
+import { useState } from 'react';
 
 interface Template {
-  id: number;
-  name: string;
+  id: string;
+  title: string;
   description: string;
-  category: string;
-  tasks: Task[];
+  tags: string[];
 }
 
-export default function Templates() {
-  const [templates] = useState<Template[]>([
+export default function TemplatesScreen() {
+  const [visible, setVisible] = useState(false);
+
+  const templates: Template[] = [
     {
-      id: 1,
-      name: "Weekly Team Meeting",
-      description: "Standard setup for weekly team sync",
-      category: "Meetings",
-      tasks: [
-        { title: "Prepare agenda", duration: 15, description: "Collect topics and create meeting outline" },
-        { title: "Send meeting invite", duration: 5 },
-        { title: "Create meeting notes doc", duration: 5 }
-      ]
+      id: '1',
+      title: 'Daily Workout',
+      description: 'Complete 30 minutes of exercise',
+      tags: ['Health', 'Routine'],
     },
     {
-      id: 2,
-      name: "Blog Post Creation",
-      description: "Content creation workflow",
-      category: "Content",
-      tasks: [
-        { title: "Research topic", duration: 30 },
-        { title: "Create outline", duration: 20 },
-        { title: "Write draft", duration: 60 },
-        { title: "Edit and revise", duration: 30 }
-      ]
-    }
-  ]);
-
-  const applyTemplate = (template: Template) => {
-    // TODO: Add tasks to user's task list
-    console.log(`Applying template: ${template.name}`);
-  };
+      id: '2',
+      title: 'Weekly Review',
+      description: 'Review tasks and plan next week',
+      tags: ['Work', 'Planning'],
+    },
+    {
+      id: '3',
+      title: 'Study Session',
+      description: '2 hours of focused study',
+      tags: ['Study', 'Focus'],
+    },
+  ];
 
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark p-4">
-      <ThemedText type="title" className="mb-4">Task Templates</ThemedText>
+    <View style={styles.container}>
       <ScrollView>
-        {templates.map(template => (
-          <Card key={template.id} className="mb-4">
-            <View className="flex-row justify-between items-center mb-2">
-              <ThemedText type="defaultSemiBold">{template.name}</ThemedText>
-              <Badge text={template.category} />
-            </View>
-            <ThemedText className="text-text-light/70 dark:text-text-dark/70 mb-3">
-              {template.description}
-            </ThemedText>
-            
-            <View className="my-3">
-              {template.tasks.map((task, index) => (
-                <View key={index} className="flex-row justify-between py-1">
-                  <ThemedText>• {task.title}</ThemedText>
-                  <ThemedText className="text-text-light/70 dark:text-text-dark/70">
-                    {task.duration}m
-                  </ThemedText>
-                </View>
-              ))}
-            </View>
+        <Text variant="headlineMedium" style={styles.title}>Task Templates 📋</Text>
 
-            <Button 
-              onPress={() => applyTemplate(template)}
-              title="Use Template"
-              className="mt-3"
-            />
+        {templates.map((template) => (
+          <Card key={template.id} style={styles.card}>
+            <Card.Content>
+              <View style={styles.headerContainer}>
+                <Text variant="titleLarge">{template.title}</Text>
+                <IconButton icon="dots-vertical" onPress={() => {}} />
+              </View>
+              <Text variant="bodyMedium">{template.description}</Text>
+              <View style={styles.tagsContainer}>
+                {template.tags.map((tag) => (
+                  <Chip key={tag} style={styles.chip}>{tag}</Chip>
+                ))}
+              </View>
+            </Card.Content>
           </Card>
         ))}
       </ScrollView>
+
+      <Portal>
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => setVisible(!visible)}
+          label="New Template"
+        />
+      </Portal>
     </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  title: {
+    marginVertical: 20,
+    textAlign: 'center',
+  },
+  card: {
+    margin: 16,
+    marginTop: 0,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  chip: {
+    marginBottom: 4,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+}); 

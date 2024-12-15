@@ -1,111 +1,79 @@
-import React from 'react';
-import { View, ScrollView } from 'react-native';
-import { ThemedText } from '../../components/ThemedText';
-import { Switch } from '../../components/Switch';
-import { Card } from '../../components/Card';
-import { Collapsible } from '../../components/Collapsible';
+import { ScrollView } from 'react-native';
+import { List, Switch, Text, Surface, Divider } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
+import { useState } from 'react';
 
 export default function SettingsScreen() {
-  const [notifications, setNotifications] = React.useState(true);
-  const [darkMode, setDarkMode] = React.useState(false);
-  const [soundEffects, setSoundEffects] = React.useState(true);
-  const [focusMode, setFocusMode] = React.useState(false);
-  const [expanded, setExpanded] = React.useState<string | null>(null);
-
-  const toggleSection = (section: string) => {
-    setExpanded(expanded === section ? null : section);
-  };
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const [soundEffects, setSoundEffects] = useState(true);
 
   return (
-    <View className="flex-1 bg-background-light dark:bg-background-dark">
-      <ScrollView className="flex-1 p-4">
-        <ThemedText type="title" className="mb-6">
-          Settings
-        </ThemedText>
+    <ScrollView style={styles.container}>
+      <Text variant="headlineMedium" style={styles.title}>Settings ⚙️</Text>
+      
+      <Surface style={styles.surface} elevation={1}>
+        <List.Section>
+          <List.Subheader>Appearance</List.Subheader>
+          <List.Item
+            title="Dark Mode"
+            left={props => <List.Icon {...props} icon="theme-light-dark" />}
+            right={() => <Switch value={darkMode} onValueChange={setDarkMode} />}
+          />
+        </List.Section>
 
-        <Card className="mb-6">
-          <View className="space-y-4">
-            <View className="flex-row justify-between items-center">
-              <View>
-                <ThemedText type="defaultSemiBold">Notifications</ThemedText>
-                <ThemedText className="text-text-light/70 dark:text-text-dark/70">
-                  Get reminders and updates
-                </ThemedText>
-              </View>
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-              />
-            </View>
+        <Divider />
 
-            <View className="flex-row justify-between items-center">
-              <View>
-                <ThemedText type="defaultSemiBold">Dark Mode</ThemedText>
-                <ThemedText className="text-text-light/70 dark:text-text-dark/70">
-                  Switch app appearance
-                </ThemedText>
-              </View>
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-              />
-            </View>
+        <List.Section>
+          <List.Subheader>Notifications</List.Subheader>
+          <List.Item
+            title="Push Notifications"
+            description="Receive task reminders"
+            left={props => <List.Icon {...props} icon="bell" />}
+            right={() => <Switch value={notifications} onValueChange={setNotifications} />}
+          />
+          <List.Item
+            title="Sound Effects"
+            description="Play sounds for actions"
+            left={props => <List.Icon {...props} icon="volume-high" />}
+            right={() => <Switch value={soundEffects} onValueChange={setSoundEffects} />}
+          />
+        </List.Section>
 
-            <View className="flex-row justify-between items-center">
-              <View>
-                <ThemedText type="defaultSemiBold">Sound Effects</ThemedText>
-                <ThemedText className="text-text-light/70 dark:text-text-dark/70">
-                  Play sounds for actions
-                </ThemedText>
-              </View>
-              <Switch
-                value={soundEffects}
-                onValueChange={setSoundEffects}
-              />
-            </View>
+        <Divider />
 
-            <View className="flex-row justify-between items-center">
-              <View>
-                <ThemedText type="defaultSemiBold">Focus Mode</ThemedText>
-                <ThemedText className="text-text-light/70 dark:text-text-dark/70">
-                  Block distractions
-                </ThemedText>
-              </View>
-              <Switch
-                value={focusMode}
-                onValueChange={setFocusMode}
-              />
-            </View>
-          </View>
-        </Card>
-
-        <Collapsible
-          title="About"
-          expanded={expanded === 'about'}
-          onToggle={() => toggleSection('about')}
-        >
-          <ThemedText>
-            TaskEase helps you stay focused and productive with smart task management
-            and focus tracking features.
-          </ThemedText>
-        </Collapsible>
-
-        <Collapsible
-          title="Help & Support"
-          expanded={expanded === 'help'}
-          onToggle={() => toggleSection('help')}
-        >
-          <ThemedText>
-            Need help? Contact us at support@taskease.com or visit our help center
-            for more information.
-          </ThemedText>
-        </Collapsible>
-
-        <ThemedText className="text-center text-text-light/50 dark:text-text-dark/50 mt-6">
-          Version 1.0.0
-        </ThemedText>
-      </ScrollView>
-    </View>
+        <List.Section>
+          <List.Subheader>About</List.Subheader>
+          <List.Item
+            title="Version"
+            description="1.0.0"
+            left={props => <List.Icon {...props} icon="information" />}
+          />
+          <List.Item
+            title="Terms of Service"
+            left={props => <List.Icon {...props} icon="file-document" />}
+          />
+          <List.Item
+            title="Privacy Policy"
+            left={props => <List.Icon {...props} icon="shield-account" />}
+          />
+        </List.Section>
+      </Surface>
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  title: {
+    marginVertical: 20,
+    textAlign: 'center',
+  },
+  surface: {
+    margin: 16,
+    borderRadius: 10,
+  },
+});
 

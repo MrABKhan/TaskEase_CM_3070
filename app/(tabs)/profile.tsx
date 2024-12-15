@@ -1,48 +1,85 @@
-import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { ThemedView } from '../../components/ThemedView';
-import { XPBar } from '../../components/XPBar';
-import { StreakCounter } from '../../components/StreakCounter';
-import { AchievementBadge } from '../../components/AchievementBadge';
+import { View, ScrollView } from 'react-native';
+import { Text, Avatar, List, Button, Surface } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
 
-export default function Profile() {
-  const achievements = [
-    {
-      title: "Task Master",
-      description: "Complete 100 tasks",
-      type: "gold" as const,
-      progress: 85,
-    },
-    {
-      title: "Early Bird",
-      description: "Complete 5 tasks before 9 AM",
-      type: "silver" as const,
-      progress: 60,
-    },
-    {
-      title: "Focus Champion",
-      description: "Complete 10 focus sessions",
-      type: "bronze" as const,
-      progress: 30,
-    },
-  ];
-
+export default function ProfileScreen() {
   return (
-    <ThemedView>
-      <ScrollView style={styles.container}>
-        <XPBar currentXP={750} requiredXP={1000} level={5} />
-        <StreakCounter currentStreak={7} bestStreak={15} />
-        {achievements.map((achievement, index) => (
-          <AchievementBadge key={index} {...achievement} />
-        ))}
-      </ScrollView>
-    </ThemedView>
+    <ScrollView style={styles.container}>
+      <Surface style={styles.header} elevation={1}>
+        <Avatar.Text size={80} label="JD" />
+        <Text variant="headlineSmall" style={styles.name}>John Doe</Text>
+        <Text variant="bodyMedium">john.doe@example.com</Text>
+      </Surface>
+
+      <Surface style={styles.statsCard} elevation={1}>
+        <View style={styles.statItem}>
+          <Text variant="titleLarge">156</Text>
+          <Text variant="bodyMedium">Tasks</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text variant="titleLarge">23</Text>
+          <Text variant="bodyMedium">Streaks</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text variant="titleLarge">89%</Text>
+          <Text variant="bodyMedium">Complete</Text>
+        </View>
+      </Surface>
+
+      <List.Section>
+        <List.Subheader>Settings</List.Subheader>
+        <List.Item
+          title="Account Settings"
+          left={props => <List.Icon {...props} icon="account-cog" />}
+        />
+        <List.Item
+          title="Notifications"
+          left={props => <List.Icon {...props} icon="bell" />}
+        />
+        <List.Item
+          title="Privacy"
+          left={props => <List.Icon {...props} icon="shield-account" />}
+        />
+        <List.Item
+          title="Help & Support"
+          left={props => <List.Icon {...props} icon="help-circle" />}
+        />
+      </List.Section>
+
+      <Button 
+        mode="outlined" 
+        style={styles.logoutButton}
+        icon="logout"
+      >
+        Log Out
+      </Button>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+  },
+  header: {
+    alignItems: 'center',
+    padding: 20,
+    gap: 8,
+  },
+  name: {
+    marginTop: 8,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 20,
+    margin: 16,
+    borderRadius: 10,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  logoutButton: {
+    margin: 16,
   },
 }); 

@@ -1,67 +1,97 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { PaperProvider, MD3LightTheme } from 'react-native-paper';
+import { Text } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
-  const theme = colorScheme === 'dark' ? {
-    ...DarkTheme,
-    colors: {
-      ...DarkTheme.colors,
-      primary: '#fff',
-      background: '#000',
-    },
-  } : {
-    ...DefaultTheme,
-    colors: {
-      ...DefaultTheme.colors,
-      primary: '#000',
-      background: '#fff',
-    },
-  };
-
   return (
-    <ThemeProvider value={theme}>
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: colorScheme === 'dark' ? '#666' : '#999',
-          tabBarStyle: {
-            backgroundColor: theme.colors.background,
-          },
-          headerStyle: {
-            backgroundColor: theme.colors.background,
-          },
-          headerTintColor: theme.colors.primary,
-        }}
-      >
+    <PaperProvider theme={MD3LightTheme}>
+      <Tabs screenOptions={{
+        headerStyle: {
+          backgroundColor: MD3LightTheme.colors.primaryContainer,
+        },
+        headerTintColor: MD3LightTheme.colors.onPrimaryContainer,
+        tabBarStyle: {
+          backgroundColor: MD3LightTheme.colors.surface,
+        },
+      }}>
         <Tabs.Screen
           name="index"
           options={{
             title: 'Home',
+            tabBarLabel: 'Home',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>🏠</Text>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="add-task"
+          options={{
+            title: 'Add Task',
+            tabBarLabel: 'Add Task',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>➕</Text>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="focus"
+          options={{
+            title: 'Focus',
+            tabBarLabel: 'Focus',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>🎯</Text>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="templates"
+          options={{
+            title: 'Templates',
+            tabBarLabel: 'Templates',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>📋</Text>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="analytics"
+          options={{
+            title: 'Analytics',
+            tabBarLabel: 'Analytics',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>📈</Text>
+            ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>👤</Text>
+            ),
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
             title: 'Settings',
+            tabBarLabel: 'Settings',
+            tabBarIcon: ({ size }) => (
+              <Text style={{ fontSize: size }}>⚙️</Text>
+            ),
           }}
         />
         <Tabs.Screen
           name="task-detail"
           options={{
-            href: null,
-            headerShown: false,
+            href: null, // This hides the tab from the tab bar
+            title: 'Task Detail',
           }}
         />
       </Tabs>
-    </ThemeProvider>
+    </PaperProvider>
   );
 }
