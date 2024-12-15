@@ -3,7 +3,8 @@ import { Text, Surface, Button, List, IconButton } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../services/api';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
 type Priority = 'high' | 'medium' | 'low';
@@ -18,49 +19,38 @@ interface Task {
   completed: boolean;
 }
 
-// Initial tasks data
-const initialTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Review Project Proposal',
-    category: 'work',
-    priority: 'high',
-    startTime: '10:00 AM',
-    endTime: '2:00 PM',
-    completed: false
-  },
-  {
-    id: '2',
-    title: 'Gym Session',
-    category: 'health',
-    priority: 'medium',
-    startTime: '4:00 PM',
-    endTime: '5:30 PM',
-    completed: false
-  },
-  {
-    id: '3',
-    title: 'Study React Native',
-    category: 'study',
-    priority: 'high',
-    startTime: '6:00 PM',
-    endTime: '8:00 PM',
-    completed: false
-  },
-  {
-    id: '4',
-    title: 'Movie Night',
-    category: 'leisure',
-    priority: 'low',
-    startTime: '8:30 PM',
-    endTime: '11:00 PM',
-    completed: false
-  }
-];
-
 export default function TabOneScreen() {
-  // Add state management for tasks
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      const fetchedTasks = await api.getTasks();
+      setTasks(fetchedTasks);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      // Add error handling UI here
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTaskComplete = async (taskId: string, completed: boolean) => {
+    try {
+      await api.updateTask(taskId, { completed });
+      const updatedTasks = tasks.map(t => 
+        t.id === taskId ? { ...t, completed } : t
+      );
+      setTasks(updatedTasks);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      // Add error handling UI here
+    }
+  };
 
   // Mock data - in real app this would come from AI analysis and user data
   const userName = "Alex";
@@ -238,10 +228,7 @@ export default function TabOneScreen() {
                   <Pressable
                     style={styles.checkboxContainer}
                     onPress={() => {
-                      const updatedTasks = tasks.map(t => 
-                        t.id === task.id ? { ...t, completed: !t.completed } : t
-                      );
-                      setTasks(updatedTasks);
+                      handleTaskComplete(task.id, !task.completed);
                     }}
                   >
                     <List.Icon 

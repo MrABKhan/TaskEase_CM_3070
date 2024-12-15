@@ -1,0 +1,23 @@
+FROM node:18
+
+# Install nodemon for hot reloading
+RUN npm install -g nodemon ts-node typescript
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy tsconfig and other config files
+COPY tsconfig.json .
+COPY .env* ./
+
+# We'll mount the source code as a volume, so we don't need to copy it here
+# This allows for hot reloading
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"] 
