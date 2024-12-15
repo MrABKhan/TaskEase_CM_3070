@@ -1,37 +1,35 @@
 import { Tabs } from 'expo-router';
 import { PaperProvider, MD3LightTheme } from 'react-native-paper';
-import { Text } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
     <PaperProvider theme={MD3LightTheme}>
       <Tabs screenOptions={{
         headerStyle: {
-          backgroundColor: MD3LightTheme.colors.primaryContainer,
+          backgroundColor: '#fff',
         },
-        headerTintColor: MD3LightTheme.colors.onPrimaryContainer,
+        headerTintColor: '#000',
         tabBarStyle: {
-          backgroundColor: MD3LightTheme.colors.surface,
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#f0f0f0',
+          height: 60,
+          paddingBottom: 8,
         },
+        tabBarActiveTintColor: '#000',
+        tabBarInactiveTintColor: '#666',
+        headerShadowVisible: false,
       }}>
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
-            tabBarLabel: 'Home',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>🏠</Text>
+            title: 'Dashboard',
+            tabBarLabel: 'Dashboard',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="home-outline" size={size} color={color} />
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="add-task"
-          options={{
-            title: 'Add Task',
-            tabBarLabel: 'Add Task',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>➕</Text>
-            ),
+            href: '/',
           }}
         />
         <Tabs.Screen
@@ -39,39 +37,10 @@ export default function TabLayout() {
           options={{
             title: 'Focus',
             tabBarLabel: 'Focus',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>🎯</Text>
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="timer-outline" size={size} color={color} />
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="templates"
-          options={{
-            title: 'Templates',
-            tabBarLabel: 'Templates',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>📋</Text>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="analytics"
-          options={{
-            title: 'Analytics',
-            tabBarLabel: 'Analytics',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>📈</Text>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            tabBarLabel: 'Profile',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>👤</Text>
-            ),
+            href: '/focus',
           }}
         />
         <Tabs.Screen
@@ -79,16 +48,10 @@ export default function TabLayout() {
           options={{
             title: 'Settings',
             tabBarLabel: 'Settings',
-            tabBarIcon: ({ size }) => (
-              <Text style={{ fontSize: size }}>⚙️</Text>
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="task-detail"
-          options={{
-            href: null, // This hides the tab from the tab bar
-            title: 'Task Detail',
+            href: '/settings',
           }}
         />
       </Tabs>
