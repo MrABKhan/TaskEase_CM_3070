@@ -225,28 +225,6 @@ export default function TabOneScreen() {
             </View>
           </View>
 
-          {/* Task Input */}
-          <View style={styles.inputContainer}>
-            <Button 
-              mode="outlined" 
-              icon="microphone" 
-              onPress={() => {}}
-              style={styles.inputButton}
-              textColor="#000"
-            >
-              Voice Input
-            </Button>
-            <Button 
-              mode="outlined"
-              icon="plus"
-              onPress={() => {}}
-              style={styles.inputButton}
-              textColor="#000"
-            >
-              Add Task
-            </Button>
-          </View>
-
           {/* Task List */}
           <View style={styles.taskList}>
             <Text style={styles.sectionTitle}>Today's Tasks</Text>
