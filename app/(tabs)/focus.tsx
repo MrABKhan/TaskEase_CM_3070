@@ -1,76 +1,344 @@
-import { View, StyleSheet } from 'react-native';
-import { Text, Surface, Button, IconButton, ProgressBar } from 'react-native-paper';
+import { View, StyleSheet, Pressable, Animated, Dimensions } from 'react-native';
+import { Text, IconButton } from 'react-native-paper';
+import { useState, useEffect, useRef } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import Svg, { Path, Circle } from 'react-native-svg';
+
+const { width, height } = Dimensions.get('window');
 
 export default function FocusScreen() {
-  const [isRunning, setIsRunning] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
-  const totalTime = 25 * 60;
+  const [isActive, setIsActive] = useState(false);
+  const [time, setTime] = useState(25 * 60);
+  const [isBreak, setIsBreak] = useState(false);
+  
+  // Animation values for waves (focus mode)
+  const animation1 = useRef(new Animated.Value(0)).current;
+  const animation2 = useRef(new Animated.Value(0)).current;
+  
+  // Animation values for blobs (break mode)
+  const blob1Scale = useRef(new Animated.Value(1)).current;
+  const blob2Scale = useRef(new Animated.Value(1)).current;
+  const blob1Position = useRef(new Animated.Value(0)).current;
+  const blob2Position = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isBreak) {
+      // Wave animation for focus mode
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(animation1, {
+            toValue: 1,
+            duration: 20000, // Slower waves
+            useNativeDriver: true
+          }),
+          Animated.timing(animation1, {
+            toValue: 0,
+            duration: 20000,
+            useNativeDriver: true
+          })
+        ])
+      ).start();
+
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(animation2, {
+            toValue: 1,
+            duration: 25000,
+            useNativeDriver: true
+          }),
+          Animated.timing(animation2, {
+            toValue: 0,
+            duration: 25000,
+            useNativeDriver: true
+          })
+        ])
+      ).start();
+    } else {
+      // Blob animation for break mode
+      const createBlobAnimation = () => {
+        return Animated.parallel([
+          Animated.sequence([
+            Animated.timing(blob1Scale, {
+              toValue: 1.2,
+              duration: 8000,
+              useNativeDriver: true
+            }),
+            Animated.timing(blob1Scale, {
+              toValue: 1,
+              duration: 8000,
+              useNativeDriver: true
+            })
+          ]),
+          Animated.sequence([
+            Animated.timing(blob2Scale, {
+              toValue: 0.8,
+              duration: 8000,
+              useNativeDriver: true
+            }),
+            Animated.timing(blob2Scale, {
+              toValue: 1,
+              duration: 8000,
+              useNativeDriver: true
+            })
+          ]),
+          Animated.sequence([
+            Animated.timing(blob1Position, {
+              toValue: 1,
+              duration: 16000,
+              useNativeDriver: true
+            }),
+            Animated.timing(blob1Position, {
+              toValue: 0,
+              duration: 16000,
+              useNativeDriver: true
+            })
+          ]),
+          Animated.sequence([
+            Animated.timing(blob2Position, {
+              toValue: -1,
+              duration: 16000,
+              useNativeDriver: true
+            }),
+            Animated.timing(blob2Position, {
+              toValue: 0,
+              duration: 16000,
+              useNativeDriver: true
+            })
+          ])
+        ]);
+      };
+
+      Animated.loop(createBlobAnimation()).start();
+    }
+
+    return () => {
+      // Clean up animations
+      animation1.setValue(0);
+      animation2.setValue(0);
+      blob1Scale.setValue(1);
+      blob2Scale.setValue(1);
+      blob1Position.setValue(0);
+      blob2Position.setValue(0);
+    };
+  }, [isBreak]);
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isActive && time > 0) {
+      interval = setInterval(() => {
+        setTime(time => time - 1);
+      }, 1000);
+    } else if (time === 0) {
+      setIsActive(false);
+    }
+
+    return () => clearInterval(interval);
+  }, [isActive, time]);
+
+  const toggleTimer = () => {
+    setIsActive(!isActive);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const adjustTime = (minutes: number) => {
+    if (!isActive) {
+      const newTime = Math.max(60, Math.min(60 * 60, time + minutes * 60));
+      setTime(newTime);
+    }
+  };
+
+  const setMode = (mode: 'focus' | 'break') => {
+    if (!isActive) {
+      setIsBreak(mode === 'break');
+      setTime(mode === 'break' ? 5 * 60 : 25 * 60);
+    }
+  };
+
+  const translateX1 = animation1.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width, 0]
+  });
+
+  const translateX2 = animation2.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width, 0]
+  });
+
+  const blob1Transform = {
+    transform: [
+      { scale: blob1Scale },
+      { translateX: blob1Position.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [-50, 0, 50]
+      })},
+      { translateY: blob1Position.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [30, 0, -30]
+      })}
+    ]
+  };
+
+  const blob2Transform = {
+    transform: [
+      { scale: blob2Scale },
+      { translateX: blob2Position.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [50, 0, -50]
+      })},
+      { translateY: blob2Position.interpolate({
+        inputRange: [-1, 0, 1],
+        outputRange: [-30, 0, 30]
+      })}
+    ]
+  };
 
   return (
-    <View style={styles.container}>
-      <Surface style={styles.surface} elevation={0}>
-        {/* Timer Display */}
+    <View style={[
+      styles.container,
+      { backgroundColor: isBreak ? '#9CAF88' : '#1E4D8C' }
+    ]}>
+      {!isBreak ? (
+        // Focus mode waves
+        <View style={styles.wavesContainer}>
+          <Animated.View
+            style={[
+              styles.wave,
+              {
+                transform: [{ translateX: translateX1 }],
+                opacity: 0.15
+              }
+            ]}
+          >
+            <Svg height="100%" width={width * 2} style={{ backgroundColor: 'transparent' }}>
+              <Path
+                d={`M0 50 Q${width/4} 0 ${width/2} 50 T${width} 50 T${width*1.5} 50 T${width*2} 50 V100 H0 Z`}
+                fill="white"
+              />
+            </Svg>
+          </Animated.View>
+          <Animated.View
+            style={[
+              styles.wave,
+              {
+                transform: [{ translateX: translateX2 }],
+                opacity: 0.1,
+                top: 20
+              }
+            ]}
+          >
+            <Svg height="100%" width={width * 2} style={{ backgroundColor: 'transparent' }}>
+              <Path
+                d={`M0 50 Q${width/4} 100 ${width/2} 50 T${width} 50 T${width*1.5} 50 T${width*2} 50 V100 H0 Z`}
+                fill="white"
+              />
+            </Svg>
+          </Animated.View>
+        </View>
+      ) : (
+        // Break mode blobs
+        <View style={styles.blobsContainer}>
+          <Animated.View style={[styles.blob, blob1Transform]}>
+            <Svg width="200" height="200" viewBox="0 0 200 200">
+              <Circle cx="100" cy="100" r="80" fill="rgba(255,255,255,0.15)" />
+            </Svg>
+          </Animated.View>
+          <Animated.View style={[styles.blob, blob2Transform]}>
+            <Svg width="240" height="240" viewBox="0 0 240 240">
+              <Circle cx="120" cy="120" r="100" fill="rgba(255,255,255,0.1)" />
+            </Svg>
+          </Animated.View>
+        </View>
+      )}
+
+      <View style={styles.content}>
         <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>
-            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+          <View style={styles.timeAdjust}>
+            <IconButton
+              icon="chevron-up"
+              iconColor="#fff"
+              size={24}
+              onPress={() => adjustTime(1)}
+              disabled={isActive}
+            />
+          </View>
+          
+          <Text style={styles.timer}>
+            {formatTime(time)}
           </Text>
-          <Text style={styles.sessionText}>Focus Session</Text>
+
+          <View style={styles.timeAdjust}>
+            <IconButton
+              icon="chevron-down"
+              iconColor="#fff"
+              size={24}
+              onPress={() => adjustTime(-1)}
+              disabled={isActive}
+            />
+          </View>
         </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <ProgressBar
-            progress={1 - (timeLeft / totalTime)}
-            style={styles.progressBar}
-            color="#000"
-          />
-        </View>
-
-        {/* Controls */}
         <View style={styles.controls}>
-          <IconButton
-            icon="skip-previous"
-            size={32}
-            onPress={() => {}}
-            style={styles.controlButton}
-          />
-          <IconButton
-            icon={isRunning ? "pause" : "play"}
-            size={48}
-            onPress={() => setIsRunning(!isRunning)}
-            style={[styles.controlButton, styles.mainButton]}
-          />
-          <IconButton
-            icon="skip-next"
-            size={32}
-            onPress={() => {}}
-            style={styles.controlButton}
-          />
+          <Pressable
+            style={[
+              styles.playButton,
+              { backgroundColor: 'rgba(255,255,255,0.2)' }
+            ]}
+            onPress={toggleTimer}
+          >
+            <MaterialCommunityIcons
+              name={isActive ? 'pause' : 'play'}
+              size={32}
+              color="#fff"
+            />
+          </Pressable>
         </View>
 
-        {/* Session Info */}
-        <View style={styles.sessionInfo}>
-          <View style={styles.infoItem}>
-            <MaterialCommunityIcons name="timer-outline" size={24} color="#000" />
-            <Text style={styles.infoLabel}>25 min focus</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <MaterialCommunityIcons name="coffee-outline" size={24} color="#000" />
-            <Text style={styles.infoLabel}>5 min break</Text>
-          </View>
+        <View style={styles.modeButtons}>
+          <Pressable
+            style={[
+              styles.modeButton,
+              !isBreak && styles.modeButtonActive,
+              { backgroundColor: 'rgba(255,255,255,0.2)' }
+            ]}
+            onPress={() => setMode('focus')}
+          >
+            <MaterialCommunityIcons
+              name="brain"
+              size={20}
+              color="#fff"
+              style={styles.modeIcon}
+            />
+            <Text style={styles.modeButtonText}>
+              Focus
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.modeButton,
+              isBreak && styles.modeButtonActive,
+              { backgroundColor: 'rgba(255,255,255,0.2)' }
+            ]}
+            onPress={() => setMode('break')}
+          >
+            <MaterialCommunityIcons
+              name="coffee"
+              size={20}
+              color="#fff"
+              style={styles.modeIcon}
+            />
+            <Text style={styles.modeButtonText}>
+              Break
+            </Text>
+          </Pressable>
         </View>
-
-        {/* Task Being Focused */}
-        <View style={styles.currentTask}>
-          <Text style={styles.currentTaskLabel}>CURRENT TASK</Text>
-          <Surface style={styles.taskCard} elevation={0}>
-            <Text style={styles.taskTitle}>Review Project Proposal</Text>
-            <Text style={styles.taskTime}>Started 10 minutes ago</Text>
-          </Surface>
-        </View>
-      </Surface>
+      </View>
     </View>
   );
 }
@@ -78,85 +346,78 @@ export default function FocusScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  surface: {
+  wavesContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  wave: {
+    position: 'absolute',
+    width: width * 2,
+    height: 100,
+  },
+  blobsContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blob: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
   timerContainer: {
     alignItems: 'center',
-    marginTop: 40,
+    marginBottom: 40,
   },
-  timerText: {
+  timeAdjust: {
+    marginVertical: -8,
+  },
+  timer: {
     fontSize: 72,
-    fontWeight: '300',
-    letterSpacing: 2,
-  },
-  sessionText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 8,
-  },
-  progressContainer: {
-    marginTop: 30,
-    marginHorizontal: 20,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#f0f0f0',
+    fontWeight: '200',
+    fontVariant: ['tabular-nums'],
+    color: '#fff',
   },
   controls: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 30,
-    gap: 20,
+    marginBottom: 40,
   },
-  controlButton: {
-    backgroundColor: '#f8f8f8',
-  },
-  mainButton: {
-    backgroundColor: '#000',
+  playButton: {
+    width: 80,
+    height: 80,
     borderRadius: 40,
-  },
-  sessionInfo: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 40,
-    gap: 30,
-  },
-  infoItem: {
     alignItems: 'center',
-    gap: 8,
   },
-  infoLabel: {
-    color: '#666',
-    fontSize: 14,
+  modeButtons: {
+    flexDirection: 'row',
+    gap: 16,
   },
-  currentTask: {
-    marginTop: 60,
+  modeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
-  currentTaskLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
-    letterSpacing: 1,
+  modeIcon: {
+    marginRight: 8,
   },
-  taskCard: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#f8f8f8',
+  modeButtonActive: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
-  taskTitle: {
+  modeButtonText: {
     fontSize: 16,
     fontWeight: '500',
-  },
-  taskTime: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    color: '#fff',
   },
 }); 

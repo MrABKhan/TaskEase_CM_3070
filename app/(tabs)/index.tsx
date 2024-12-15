@@ -1,8 +1,9 @@
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, Pressable } from 'react-native';
 import { Text, Surface, Button, List, IconButton } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
+import { useState } from 'react';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
 type Priority = 'high' | 'medium' | 'low';
@@ -17,7 +18,50 @@ interface Task {
   completed: boolean;
 }
 
+// Initial tasks data
+const initialTasks: Task[] = [
+  {
+    id: '1',
+    title: 'Review Project Proposal',
+    category: 'work',
+    priority: 'high',
+    startTime: '10:00 AM',
+    endTime: '2:00 PM',
+    completed: false
+  },
+  {
+    id: '2',
+    title: 'Gym Session',
+    category: 'health',
+    priority: 'medium',
+    startTime: '4:00 PM',
+    endTime: '5:30 PM',
+    completed: false
+  },
+  {
+    id: '3',
+    title: 'Study React Native',
+    category: 'study',
+    priority: 'high',
+    startTime: '6:00 PM',
+    endTime: '8:00 PM',
+    completed: false
+  },
+  {
+    id: '4',
+    title: 'Movie Night',
+    category: 'leisure',
+    priority: 'low',
+    startTime: '8:30 PM',
+    endTime: '11:00 PM',
+    completed: false
+  }
+];
+
 export default function TabOneScreen() {
+  // Add state management for tasks
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+
   // Mock data - in real app this would come from AI analysis and user data
   const userName = "Alex";
   const timeOfDay = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
@@ -69,46 +113,6 @@ export default function TabOneScreen() {
     completion: { value: "80%", label: "Completion" },
     energy: { value: "High", label: "Energy" }
   };
-
-  // Mock tasks data
-  const tasks: Task[] = [
-    {
-      id: '1',
-      title: 'Review Project Proposal',
-      category: 'work',
-      priority: 'high',
-      startTime: '10:00 AM',
-      endTime: '2:00 PM',
-      completed: false
-    },
-    {
-      id: '2',
-      title: 'Gym Session',
-      category: 'health',
-      priority: 'medium',
-      startTime: '4:00 PM',
-      endTime: '5:30 PM',
-      completed: false
-    },
-    {
-      id: '3',
-      title: 'Study React Native',
-      category: 'study',
-      priority: 'high',
-      startTime: '6:00 PM',
-      endTime: '8:00 PM',
-      completed: false
-    },
-    {
-      id: '4',
-      title: 'Movie Night',
-      category: 'leisure',
-      priority: 'low',
-      startTime: '8:30 PM',
-      endTime: '11:00 PM',
-      completed: false
-    }
-  ];
 
   const getCategoryColor = (category: Category): string => {
     switch (category) {
@@ -230,46 +234,85 @@ export default function TabOneScreen() {
             <Text style={styles.sectionTitle}>Today's Tasks</Text>
             <List.Section>
               {tasks.map((task) => (
-                <Link key={task.id} href={`/task-detail/${task.id}`} asChild>
-                  <List.Item
-                    title={task.title}
-                    titleStyle={styles.taskTitle}
-                    description={() => (
-                      <View style={styles.taskMeta}>
-                        <View style={styles.tagContainer}>
-                          <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
-                            <MaterialCommunityIcons 
-                              name={getCategoryIcon(task.category)} 
-                              size={14} 
-                              color={getCategoryColor(task.category)} 
-                              style={styles.tagIcon}
-                            />
-                            <Text style={[styles.tagText, { color: getCategoryColor(task.category) }]}>
-                              {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
-                            </Text>
+                <View key={task.id} style={styles.taskItemContainer}>
+                  <Pressable
+                    style={styles.checkboxContainer}
+                    onPress={() => {
+                      const updatedTasks = tasks.map(t => 
+                        t.id === task.id ? { ...t, completed: !t.completed } : t
+                      );
+                      setTasks(updatedTasks);
+                    }}
+                  >
+                    <List.Icon 
+                      icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+                      color={task.completed ? "#30D158" : "#666"}
+                    />
+                  </Pressable>
+                  <Link 
+                    href={`/task-detail/${task.id}`} 
+                    asChild 
+                    style={styles.taskContent}
+                  >
+                    <Pressable>
+                      <List.Item
+                        title={task.title}
+                        titleStyle={[
+                          styles.taskTitle,
+                          task.completed && styles.taskTitleCompleted
+                        ]}
+                        description={() => (
+                          <View style={[
+                            styles.taskMeta,
+                            task.completed && styles.taskMetaCompleted
+                          ]}>
+                            <View style={styles.tagContainer}>
+                              <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
+                                <MaterialCommunityIcons 
+                                  name={getCategoryIcon(task.category)} 
+                                  size={14} 
+                                  color={task.completed ? '#999' : getCategoryColor(task.category)} 
+                                  style={styles.tagIcon}
+                                />
+                                <Text style={[
+                                  styles.tagText, 
+                                  { color: task.completed ? '#999' : getCategoryColor(task.category) }
+                                ]}>
+                                  {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                                </Text>
+                              </View>
+                              <View style={[
+                                styles.tag, 
+                                { backgroundColor: task.completed ? '#f0f0f0' : `${getPriorityColor(task.priority)}15` }
+                              ]}>
+                                <Text style={[
+                                  styles.tagText,
+                                  { color: task.completed ? '#999' : getPriorityColor(task.priority) }
+                                ]}>
+                                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.timeContainer}>
+                              <MaterialCommunityIcons 
+                                name="clock-outline" 
+                                size={14} 
+                                color={task.completed ? '#999' : '#666'} 
+                              />
+                              <Text style={[
+                                styles.timeText,
+                                task.completed && styles.timeTextCompleted
+                              ]}>
+                                {task.startTime} - {task.endTime}
+                              </Text>
+                            </View>
                           </View>
-                          <View style={[styles.tag, { backgroundColor: `${getPriorityColor(task.priority)}15` }]}>
-                            <Text style={[styles.tagText, { color: getPriorityColor(task.priority) }]}>
-                              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.timeContainer}>
-                          <MaterialCommunityIcons name="clock-outline" size={14} color="#666" />
-                          <Text style={styles.timeText}>{task.startTime} - {task.endTime}</Text>
-                        </View>
-                      </View>
-                    )}
-                    left={props => (
-                      <List.Icon 
-                        {...props} 
-                        icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
-                        color={task.completed ? "#30D158" : "#666"}
+                        )}
+                        style={styles.taskItem}
                       />
-                    )}
-                    style={styles.taskItem}
-                  />
-                </Link>
+                    </Pressable>
+                  </Link>
+                </View>
               ))}
             </List.Section>
           </View>
@@ -278,124 +321,229 @@ export default function TabOneScreen() {
           <View style={styles.analyticsContainer}>
             <Text style={styles.sectionTitle}>Analytics Insights</Text>
             
-            {/* Weekly Performance */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Weekly Task Completion</Text>
-              <View style={styles.weeklyStats}>
-                <MaterialCommunityIcons name="trending-up" size={24} color="#4CAF50" />
-                <Text style={styles.analyticsValue}>{analyticsData.weeklyCompletion}%</Text>
-              </View>
-              <Text style={styles.analyticsSubtext}>Tasks completed this week</Text>
-            </View>
+            {/* Activity Graph */}
+            <View style={[styles.analyticsCard, styles.activityCard]}>
+              <Text style={styles.analyticsTitle}>Activity Overview</Text>
+              
+              <View style={styles.activityContainer}>
+                {/* Time Period Labels */}
+                <View style={styles.timePeriodLabels}>
+                  <Text style={styles.timeLabel}>6AM</Text>
+                  <Text style={styles.timeLabel}>9AM</Text>
+                  <Text style={styles.timeLabel}>12PM</Text>
+                  <Text style={styles.timeLabel}>3PM</Text>
+                  <Text style={styles.timeLabel}>6PM</Text>
+                  <Text style={styles.timeLabel}>9PM</Text>
+                </View>
 
-            {/* Productive Times Analysis */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Most Productive Hours</Text>
-              {analyticsData.productiveHours.map((hour, index) => (
-                <View key={index} style={styles.productiveTimeItem}>
-                  <View style={styles.productiveTimeHeader}>
-                    <View style={styles.productiveTimeMain}>
-                      <Text style={styles.rankNumber}>#{index + 1}</Text>
-                      <View>
-                        <Text style={styles.productiveTimeText}>{hour.time}</Text>
-                        <Text style={styles.productiveTimeLabel}>{hour.label}</Text>
+                <View style={styles.graphContainer}>
+                  {/* Day Labels and Activity Grid */}
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, dayIndex) => (
+                    <View key={day} style={styles.dayRow}>
+                      <Text style={styles.dayLabel}>{day}</Text>
+                      <View style={styles.activityRow}>
+                        {[...Array(6)].map((_, timeIndex) => {
+                          const intensity = Math.random(); // In real app, this would be actual activity data
+                          const activityLevel = intensity > 0.7 
+                            ? 'High'
+                            : intensity > 0.4 
+                              ? 'Medium'
+                              : intensity > 0.1 
+                                ? 'Low'
+                                : 'None';
+                          return (
+                            <Pressable
+                              key={timeIndex}
+                              onPress={() => {
+                                console.log(`${day}, Period ${timeIndex + 1}: ${activityLevel} activity`);
+                              }}
+                            >
+                              <View
+                                style={[
+                                  styles.activityCell,
+                                  {
+                                    backgroundColor: intensity > 0.7 
+                                      ? '#30D158' 
+                                      : intensity > 0.4 
+                                        ? '#63DA82' 
+                                        : intensity > 0.1 
+                                          ? '#96E4AB' 
+                                          : '#E3E3E3'
+                                  }
+                                ]}
+                              />
+                            </Pressable>
+                          );
+                        })}
                       </View>
                     </View>
-                    <Text style={styles.productivityPercent}>{hour.productivity}%</Text>
+                  ))}
+                </View>
+
+                <View style={styles.activityLegend}>
+                  <Text style={styles.activityLegendText}>Less</Text>
+                  <View style={styles.activityLegendCells}>
+                    {['#E3E3E3', '#96E4AB', '#63DA82', '#30D158'].map((color, index) => (
+                      <View
+                        key={index}
+                        style={[styles.activityLegendCell, { backgroundColor: color }]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.activityLegendText}>More</Text>
+                </View>
+
+                <View style={styles.productivityInsights}>
+                  <View style={styles.productivityInsight}>
+                    <MaterialCommunityIcons name="clock-outline" size={20} color="#666" style={styles.insightIcon} />
+                    <View style={styles.insightContent}>
+                      <Text style={styles.insightLabel}>Most Productive Time</Text>
+                      <Text style={styles.insightValue}>Morning (9:00 - 11:00 AM)</Text>
+                    </View>
+                  </View>
+                  <View style={styles.productivityInsight}>
+                    <MaterialCommunityIcons name="calendar" size={20} color="#666" style={styles.insightIcon} />
+                    <View style={styles.insightContent}>
+                      <Text style={styles.insightLabel}>Most Productive Day</Text>
+                      <Text style={styles.insightValue}>Tuesday (90% completion)</Text>
+                    </View>
                   </View>
                 </View>
-              ))}
+
+                <View style={styles.activityStats}>
+                  <View style={styles.activityStat}>
+                    <Text style={styles.activityStatValue}>{analyticsData.weeklyCompletion}%</Text>
+                    <Text style={styles.activityStatLabel}>Completion Rate</Text>
+                  </View>
+                  <View style={styles.activityStat}>
+                    <Text style={styles.activityStatValue}>{analyticsData.focusSessionsWeek}</Text>
+                    <Text style={styles.activityStatLabel}>Focus Sessions</Text>
+                  </View>
+                  <View style={styles.activityStat}>
+                    <Text style={styles.activityStatValue}>{analyticsData.averageSessionLength}</Text>
+                    <Text style={styles.activityStatLabel}>Avg. Session</Text>
+                  </View>
+                </View>
+              </View>
             </View>
 
-            {/* Most Productive Days */}
+            {/* Wellness & Balance Analytics */}
             <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Most Productive Days</Text>
-              {analyticsData.productiveDays.map((day, index) => (
-                <View key={index} style={styles.productiveTimeItem}>
-                  <View style={styles.productiveTimeHeader}>
-                    <View style={styles.productiveTimeMain}>
-                      <Text style={styles.rankNumber}>#{index + 1}</Text>
-                      <Text style={styles.productiveTimeText}>{day.day}</Text>
+              <Text style={styles.analyticsTitle}>Wellness & Balance</Text>
+              <View style={styles.wellnessContainer}>
+                {/* Stress Level Indicator */}
+                <View style={[styles.wellnessMetric, styles.metricCard]}>
+                  <View style={styles.wellnessHeader}>
+                    <MaterialCommunityIcons name="brain" size={20} color="#6366F1" />
+                    <Text style={styles.wellnessTitle}>Stress Level</Text>
+                  </View>
+                  <View style={styles.stressIndicator}>
+                    <View style={styles.stressBarContainer}>
+                      <View style={[styles.stressBar, { width: '35%', backgroundColor: '#6366F1' }]} />
                     </View>
-                    <View style={styles.productivityStats}>
-                      <Text style={styles.productivityPercent}>{day.productivity}%</Text>
-                      <Text style={styles.tasksCompleted}>{day.tasksCompleted} tasks</Text>
+                    <Text style={[styles.stressLabel, { color: '#6366F1' }]}>Low</Text>
+                  </View>
+                  <Text style={styles.wellnessSubtext}>Based on task completion patterns and work hours</Text>
+                </View>
+
+                {/* Work-Life Balance */}
+                <View style={[styles.wellnessMetric, styles.metricCard]}>
+                  <View style={styles.wellnessHeader}>
+                    <MaterialCommunityIcons name="chart-pie" size={20} color="#EC4899" />
+                    <Text style={styles.wellnessTitle}>Work-Life Balance</Text>
+                  </View>
+                  <View style={styles.balanceDistribution}>
+                    <View style={[styles.balanceItem, { backgroundColor: '#EC489915' }]}>
+                      <Text style={[styles.balanceValue, { color: '#EC4899' }]}>60%</Text>
+                      <Text style={styles.balanceLabel}>Work</Text>
+                    </View>
+                    <View style={[styles.balanceItem, { backgroundColor: '#8B5CF615' }]}>
+                      <Text style={[styles.balanceValue, { color: '#8B5CF6' }]}>25%</Text>
+                      <Text style={styles.balanceLabel}>Personal</Text>
+                    </View>
+                    <View style={[styles.balanceItem, { backgroundColor: '#10B98115' }]}>
+                      <Text style={[styles.balanceValue, { color: '#10B981' }]}>15%</Text>
+                      <Text style={styles.balanceLabel}>Health</Text>
                     </View>
                   </View>
                 </View>
-              ))}
-            </View>
 
-            {/* Task Distribution */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Time Spent by Category</Text>
-              <View style={styles.taskDistribution}>
-                {Object.entries(analyticsData.taskCategories)
-                  .sort((a, b) => b[1].timeSpent - a[1].timeSpent)
-                  .map(([category, data]) => (
-                  <View key={category} style={styles.taskDistributionItem}>
-                    <View style={styles.taskDistributionHeader}>
-                      <Text style={styles.taskDistributionCategory}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                      </Text>
-                      <Text style={styles.taskDistributionCount}>{data.count} tasks</Text>
-                    </View>
-                    <View style={styles.taskDistributionBarContainer}>
-                      <View style={styles.taskDistributionBarWrapper}>
-                        <View 
+                {/* Break Compliance */}
+                <View style={[styles.wellnessMetric, styles.metricCard]}>
+                  <View style={styles.wellnessHeader}>
+                    <MaterialCommunityIcons name="coffee" size={20} color="#F59E0B" />
+                    <Text style={styles.wellnessTitle}>Break Compliance</Text>
+                  </View>
+                  <View style={styles.breakProgress}>
+                    <Text style={styles.breakStats}>
+                      <Text style={[styles.breakHighlight, { color: '#F59E0B' }]}>8/10</Text>
+                      <Text> suggested breaks taken</Text>
+                    </Text>
+                    <View style={styles.breakBar}>
+                      {[...Array(10)].map((_, index) => (
+                        <View
+                          key={index}
                           style={[
-                            styles.taskDistributionBar, 
-                            { 
-                              width: `${(data.timeSpent / 15) * 100}%`,
-                              backgroundColor: getCategoryColor(category as Category)
-                            }
-                          ]} 
+                            styles.breakDot,
+                            { backgroundColor: index < 8 ? '#F59E0B' : '#F59E0B30' }
+                          ]}
                         />
-                      </View>
-                      <Text style={styles.taskDistributionTime}>{data.timeSpent}h</Text>
+                      ))}
                     </View>
                   </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Completion Rate */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Task Completion Rate</Text>
-              <View style={styles.completionRate}>
-                <View style={styles.completionBar}>
-                  <View style={[styles.completionFill, { width: `${analyticsData.completionRate.onTime}%`, backgroundColor: '#4CAF50' }]} />
-                  <View style={[styles.completionFill, { width: `${analyticsData.completionRate.late}%`, backgroundColor: '#FFC107' }]} />
-                  <View style={[styles.completionFill, { width: `${analyticsData.completionRate.missed}%`, backgroundColor: '#FF5252' }]} />
-                </View>
-                <View style={styles.completionLegend}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
-                    <Text style={styles.legendText}>On Time ({analyticsData.completionRate.onTime}%)</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#FFC107' }]} />
-                    <Text style={styles.legendText}>Late ({analyticsData.completionRate.late}%)</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#FF5252' }]} />
-                    <Text style={styles.legendText}>Missed ({analyticsData.completionRate.missed}%)</Text>
-                  </View>
+                  <Text style={styles.wellnessSubtext}>You're doing great at maintaining regular breaks!</Text>
                 </View>
               </View>
             </View>
 
-            {/* Focus Sessions */}
+            {/* Personalization Insights */}
             <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Focus Sessions</Text>
-              <View style={styles.focusStats}>
-                <View style={styles.focusStat}>
-                  <Text style={styles.focusValue}>{analyticsData.focusSessionsWeek}</Text>
-                  <Text style={styles.focusLabel}>Sessions this week</Text>
+              <Text style={styles.analyticsTitle}>Personal Insights</Text>
+              <View style={styles.insightsContainer}>
+                <View style={[styles.insightMetric, styles.metricCard]}>
+                  <View style={[styles.insightIconContainer, { backgroundColor: '#6366F115' }]}>
+                    <MaterialCommunityIcons name="lightbulb-outline" size={20} color="#6366F1" />
+                  </View>
+                  <View style={styles.insightContentWrapper}>
+                    <Text style={[styles.insightTitle, { color: '#6366F1' }]}>Energy Pattern</Text>
+                    <Text style={styles.insightText}>Your peak productivity occurs during</Text>
+                    <View style={styles.insightMetricContainer}>
+                      <Text style={[styles.insightMetricValue, { color: '#6366F1' }]}>9-11 AM</Text>
+                      <Text style={styles.insightMetricLabel}>(Morning)</Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.focusStat}>
-                  <Text style={styles.focusValue}>{analyticsData.averageSessionLength}</Text>
-                  <Text style={styles.focusLabel}>Avg. session length</Text>
+
+                <View style={[styles.insightMetric, styles.metricCard]}>
+                  <View style={[styles.insightIconContainer, { backgroundColor: '#EC489915' }]}>
+                    <MaterialCommunityIcons name="chart-bell-curve" size={20} color="#EC4899" />
+                  </View>
+                  <View style={styles.insightContentWrapper}>
+                    <Text style={[styles.insightTitle, { color: '#EC4899' }]}>Task Load Analysis</Text>
+                    <Text style={styles.insightText}>Best performance early in the week</Text>
+                    <View style={styles.insightMetricContainer}>
+                      <View style={[styles.loadIndicator, { backgroundColor: '#EC489915' }]}>
+                        <Text style={[styles.loadText, { color: '#EC4899' }]}>Moderate Load</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={[styles.insightMetric, styles.metricCard]}>
+                  <View style={[styles.insightIconContainer, { backgroundColor: '#10B98115' }]}>
+                    <MaterialCommunityIcons name="trending-up" size={20} color="#10B981" />
+                  </View>
+                  <View style={styles.insightContentWrapper}>
+                    <Text style={[styles.insightTitle, { color: '#10B981' }]}>Focus Score Trend</Text>
+                    <Text style={styles.insightText}>Weekly improvement</Text>
+                    <View style={styles.insightMetricContainer}>
+                      <Text style={[styles.insightMetricValue, { color: '#10B981' }]}>+15%</Text>
+                      <View style={[styles.trendIndicator, { backgroundColor: '#10B98115' }]}>
+                        <MaterialCommunityIcons name="arrow-up" size={14} color="#10B981" />
+                        <Text style={[styles.trendText, { color: '#10B981' }]}>Improving</Text>
+                      </View>
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>
@@ -459,8 +607,7 @@ const styles = StyleSheet.create({
   },
   insightText: {
     fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
+    color: '#666',
   },
   insightHighlight: {
     fontWeight: '600',
@@ -705,6 +852,289 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4,
+  },
+  taskItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkboxContainer: {
+    paddingLeft: 0,
+    paddingRight: 8,
+  },
+  taskContent: {
+    flex: 1,
+  },
+  taskTitleCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#999',
+  },
+  taskMetaCompleted: {
+    opacity: 0.7,
+  },
+  timeTextCompleted: {
+    color: '#999',
+  },
+  activityCard: {
+    padding: 20,
+  },
+  activityContainer: {
+    gap: 16,
+  },
+  timePeriodLabels: {
+    flexDirection: 'row',
+    paddingLeft: 45,
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingRight: 8,
+  },
+  timeLabel: {
+    fontSize: 12,
+    color: '#666',
+    width: 36,
+    textAlign: 'center',
+  },
+  graphContainer: {
+    gap: 8,
+  },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dayLabel: {
+    fontSize: 12,
+    color: '#666',
+    width: 45,
+    textAlign: 'left',
+  },
+  activityRow: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingRight: 8,
+  },
+  activityCell: {
+    width: 36,
+    height: 24,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  activityLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 8,
+  },
+  activityLegendCells: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  activityLegendCell: {
+    width: 16,
+    height: 16,
+    borderRadius: 3,
+  },
+  activityLegendText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  productivityInsights: {
+    marginTop: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  productivityInsight: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  insightIcon: {
+    width: 24,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  insightValue: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 2,
+  },
+  activityStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  activityStat: {
+    alignItems: 'center',
+  },
+  activityStatValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000',
+  },
+  activityStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  wellnessContainer: {
+    gap: 16,
+  },
+  wellnessMetric: {
+    gap: 12,
+  },
+  wellnessHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wellnessTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  wellnessSubtext: {
+    fontSize: 12,
+    color: '#666',
+  },
+  stressIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stressBarContainer: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#6366F115',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  stressBar: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  stressLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    width: 40,
+  },
+  balanceDistribution: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  balanceItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+  },
+  balanceValue: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  balanceLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  breakProgress: {
+    gap: 8,
+  },
+  breakBar: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  breakDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flex: 1,
+  },
+  breakStats: {
+    fontSize: 14,
+  },
+  breakHighlight: {
+    fontWeight: '600',
+  },
+  insightsContainer: {
+    gap: 12,
+  },
+  insightMetric: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  insightIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightContentWrapper: {
+    flex: 1,
+  },
+  insightTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  insightText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  metricCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  insightMetricContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  insightMetricValue: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  insightMetricLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  loadIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  loadText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  trendIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 
