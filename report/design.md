@@ -131,17 +131,13 @@ graph TD
 
 ## Domain and User Analysis
 
-### Target Users
+### Target Users and Needs Analysis
+TaskEase's user analysis reveals a diverse target audience with specific needs and usage patterns. Our primary users include busy professionals who manage multiple concurrent projects, students balancing academic and personal commitments, remote workers coordinating distributed tasks, and freelancers handling multiple client projects. Through extensive user research and interviews, we've identified key patterns in task management needs that span across these user groups.
 
-1. **Primary Users**
-   - Busy professionals managing multiple projects
-   - Students balancing academic and personal tasks
-   - Remote workers coordinating distributed work
-   - Freelancers handling multiple clients
+The user needs analysis, visualized in our mindmap, identifies four core areas of functionality that our users require. Task Management forms the foundation, with users needing quick task entry mechanisms, intuitive priority setting, and reliable deadline tracking. Smart Features leverage AI technology to provide intelligent suggestions and context-aware automation, addressing the need for more efficient task organization. Integration capabilities ensure seamless connection with existing tools like calendars and email systems, while Wellness features focus on maintaining user well-being through structured breaks and work-life balance tracking.
 
-2. **User Needs Analysis**
-   ```mermaid
-   mindmap
+```mermaid
+mindmap
     root((User Needs))
         Task Management
             Quick task entry
@@ -159,92 +155,112 @@ graph TD
             Break reminders
             Work-life balance
             Progress tracking
-   ```
+```
 
 ## Design Philosophy and Choices
 
-### Technical Architecture
+### UI/UX Design Principles
+The UI/UX design principles of TaskEase are built around four core pillars that guide every aspect of the user interface. Simplicity ensures that users can accomplish tasks with minimal cognitive load, while Accessibility guarantees that the application is usable by people with diverse abilities and preferences. Consistency across the interface helps users build familiarity and muscle memory, and Adaptivity ensures the app responds intelligently to user behavior and context.
 
-1. **Frontend Implementation**
-   - React Native for cross-platform mobile development
-   - Redux for state management
-   - Styled-components for theming
-   - React Navigation for routing
+These principles manifest in several key implementation choices. The Mobile First approach optimizes the interface for touch interactions and smaller screens, while supporting larger displays through responsive design. Dark/Light Modes provide visual comfort across different lighting conditions and user preferences. Gesture Support enables intuitive interactions like swipes and long-presses, while Voice Input offers hands-free task creation for enhanced accessibility.
 
-### OpenAI Integration Architecture
+```mermaid
+graph LR
+    A[Simplicity] --> E[User Interface]
+    B[Accessibility] --> E
+    C[Consistency] --> E
+    D[Adaptivity] --> E
+    
+    E --> F[Mobile First]
+    E --> G[Dark/Light Modes]
+    E --> H[Gesture Support]
+    E --> I[Voice Input]
+```
+
+## Technology Stack and Implementation
+
+### Core Technologies
+The technology stack of TaskEase is carefully chosen to provide a robust, scalable, and maintainable application architecture. The Frontend Stack centers around React Native, providing cross-platform compatibility while maintaining native performance. Redux Toolkit manages application state with predictable updates, while React Navigation enables smooth screen transitions. Styled Components ensure consistent styling across the application.
+
+The Backend Stack utilizes Node.js and Express.js for efficient API handling, with MongoDB providing flexible document storage and Redis enabling high-performance caching. The AI/ML Stack combines OpenAI's GPT-4 for sophisticated task analysis, TensorFlow.js for client-side behavior prediction, and scikit-learn for server-side priority prediction algorithms.
 
 ```mermaid
 graph TD
-    subgraph "User Interaction Layer"
-        A[Voice Input] --> C[Speech-to-Text]
-        B[Text Input] --> D[Text Processing]
-        C --> D
+    subgraph "Frontend Stack"
+        A[React Native] --> B[Mobile App]
+        C[Redux Toolkit] --> B
+        D[React Navigation] --> B
+        E[Styled Components] --> B
     end
     
-    subgraph "OpenAI Processing"
-        D --> E[GPT-4 API]
-        E --> F[Task Extraction]
-        E --> G[Context Analysis]
-        E --> H[Priority Inference]
+    subgraph "Backend Stack"
+        F[Node.js] --> G[API Server]
+        H[Express.js] --> G
+        I[MongoDB] --> G
+        J[Redis] --> G
     end
     
-    subgraph "Task Enhancement"
-        F --> I[Category Assignment]
-        G --> J[Smart Scheduling]
-        H --> K[Priority Score]
-        
-        I --> L[Enhanced Task]
-        J --> L
-        K --> L
-    end
-    
-    subgraph "Context Generation"
-        M[User History] --> N[Context Engine]
-        O[Weather Data] --> N
-        P[Time/Date] --> N
-        
-        N --> Q[GPT-4 Analysis]
-        Q --> R[Smart Insights]
-        R --> S[UI Recommendations]
-    end
-    
-    subgraph "Feedback Loop"
-        L --> T[Task Storage]
-        T --> U[User Interaction Data]
-        U --> M
+    subgraph "AI/ML Stack"
+        K[OpenAI GPT-4] --> L[Task Analysis]
+        M[TensorFlow.js] --> N[User Behavior]
+        O[scikit-learn] --> P[Priority Prediction]
     end
 ```
 
-## Implementation Plan
+### API Integration
+The API integration strategy in TaskEase combines essential external services to enhance functionality. Google Calendar API enables seamless schedule synchronization, while the OpenAI API powers natural language understanding and task analysis. Weather API integration provides contextual awareness for task scheduling, and Location Services enable location-based task suggestions and reminders.
+
+```mermaid
+graph LR
+    A[TaskEase] --> B[Google Calendar API]
+    A --> C[OpenAI API]
+    A --> D[Weather API]
+    A --> E[Location Services]
+```
 
 ### Development Timeline
+The development timeline for TaskEase follows a carefully structured approach spanning six months, from November 2024 to April 2025. The Project Setup phase in November establishes the foundation with environment configuration and architecture design. Core Features development in December focuses on essential task management functionality and UI components. January 2025 is dedicated to AI Integration, implementing OpenAI processing and voice input capabilities. Enhanced Features development in February adds sophisticated features like the analytics dashboard and focus timer. March focuses on comprehensive Testing & Refinement, while April culminates in the final Deployment phase with beta testing and production release.
 
 ```mermaid
 gantt
     title TaskEase Development Timeline
-    dateFormat  YYYY-MM-DD
-    section Planning
-    Project Setup           :2023-11-01, 14d
-    Architecture Design     :2023-11-15, 14d
+    dateFormat YYYY-MM-DD
     
-    section Frontend
-    Basic UI Implementation :2023-12-01, 30d
-    Advanced Features       :2023-12-15, 45d
-    Testing & Refinement    :2024-01-15, 30d
+    section Project Setup (November 2024)
+    Environment Setup           :2024-11-01, 7d
+    Architecture Design        :2024-11-08, 7d
+    Initial Project Structure  :2024-11-15, 7d
+    Basic Navigation Setup     :2024-11-22, 7d
     
-    section Backend
-    API Development        :2023-12-01, 30d
-    Database Setup         :2023-12-15, 14d
-    ML Integration         :2024-01-01, 45d
+    section Core Features (December 2024)
+    Task CRUD Implementation   :2024-12-01, 14d
+    UI Components Development  :2024-12-01, 21d
+    State Management Setup     :2024-12-15, 14d
+    Basic Styling             :2024-12-22, 10d
     
-    section Testing
-    Unit Testing          :2024-02-01, 21d
-    Integration Testing   :2024-02-15, 21d
-    User Testing          :2024-03-01, 14d
+    section AI Integration (January 2025)
+    OpenAI Integration        :2025-01-01, 14d
+    Voice Input Setup         :2025-01-08, 14d
+    Smart Context Development :2025-01-15, 14d
+    ML Model Integration      :2025-01-22, 10d
     
-    section Deployment
-    Beta Release          :2024-03-15, 7d
-    Production Deploy     :2024-03-22, 7d
+    section Enhanced Features (February 2025)
+    Analytics Dashboard       :2025-02-01, 14d
+    Calendar Integration     :2025-02-08, 14d
+    Focus Timer              :2025-02-15, 14d
+    Settings Implementation  :2025-02-22, 7d
+    
+    section Testing & Refinement (March 2025)
+    Unit Testing             :2025-03-01, 14d
+    Integration Testing      :2025-03-08, 14d
+    User Testing             :2025-03-15, 14d
+    Bug Fixes               :2025-03-22, 10d
+    
+    section Deployment (April 2025)
+    Beta Release            :2025-04-01, 7d
+    Final Testing          :2025-04-08, 7d
+    Production Deploy      :2025-04-15, 7d
+    Post-Deploy Monitoring :2025-04-22, 7d
 ```
 
 ## Testing and Evaluation Strategy
@@ -516,7 +532,7 @@ graph TD
 ### Key Screens Overview
 
 #### 1. Dashboard Screen
-![Dashboard](../screenshots/dashboard.png)
+
 * **Smart Context Bar**
   - Weather integration with icon and temperature
   - Urgent tasks counter with next due time
@@ -532,7 +548,7 @@ graph TD
   - Energy level indicator
 
 #### 2. Task Management
-![Tasks](../screenshots/tasks.png)
+
 * **Task List Features**
   - Swipeable task cards
   - Category-based color coding
@@ -549,7 +565,7 @@ graph TD
   - Due date highlighting
 
 #### 3. Smart Input
-![Smart Input](../screenshots/smart_input.png)
+
 * **AI Task Creation**
   - Voice input capability
   - Natural language processing
@@ -560,7 +576,7 @@ graph TD
   - Context-aware scheduling
 
 #### 4. Focus Mode
-![Focus](../screenshots/focus.png)
+
 * **Focus Timer**
   - Timer controls
   - Session tracking
@@ -571,7 +587,7 @@ graph TD
   - Energy level monitoring
 
 #### 5. Calendar Integration
-![Calendar](../screenshots/calendar.png)
+
 * **Calendar View**
   - Task distribution overview
   - Event synchronization
@@ -582,7 +598,6 @@ graph TD
   - Deadline tracking
 
 #### 6. Settings
-![Settings](../screenshots/settings.png)
 * **App Configuration**
   - Theme customization
   - Notification preferences
@@ -593,6 +608,7 @@ graph TD
   - App customization
 
 ### Navigation Structure
+The navigation structure of TaskEase is designed to provide intuitive access to all core functionalities through a bottom navigation bar. This hierarchical structure ensures that users can quickly access any feature within two taps. The bottom navigation serves as the primary navigation hub, providing direct access to five main sections: Dashboard, Calendar, Smart Input, Focus, and Settings. The Dashboard section expands into three key subsections: Task List for comprehensive task management, Analytics for performance insights, and Smart Context for AI-powered suggestions. The Smart Input section branches into Voice Input and AI Processing components, enabling natural language task creation. The Focus section contains both the Timer functionality and detailed Statistics tracking, creating a comprehensive productivity monitoring system.
 
 ```mermaid
 graph TD
@@ -614,6 +630,7 @@ graph TD
 ```
 
 ### Design System Implementation
+The design system implementation in TaskEase follows a systematic approach to ensure consistency and accessibility across the application. The color scheme is carefully crafted to provide clear visual hierarchies and category differentiation, with specific colors assigned to different task categories and UI elements. The typography system implements a clear hierarchy with different font sizes and weights for various content types, from headings to status text. Component examples demonstrate the practical implementation of these design principles, showing how different elements work together to create a cohesive user experience.
 
 1. **Color Scheme**
    ```css
@@ -674,6 +691,7 @@ graph TD
    ```
 
 ### Interaction Patterns
+The interaction patterns in TaskEase are designed to maximize efficiency while maintaining intuitive usability. Task interactions follow common mobile patterns with enhanced functionality: swipe right to complete tasks, swipe left to delete, long press for additional options, and tap for detailed view. The Smart Input interaction focuses on seamless voice input, where users can hold the microphone button to start recording, which then triggers the AI processing pipeline to create a new task. These patterns are consistently implemented across the application to create a familiar and efficient user experience.
 
 ```mermaid
 graph TD
@@ -691,318 +709,8 @@ graph TD
     end
 ```
 
-## Technical Implementation Details
-
-### Frontend Architecture
-
-The frontend of TaskEase is built using React Native with Expo, enabling cross-platform development while maintaining native performance. Key implementation aspects include:
-
-1. **Component Structure**
-   - Utilizes functional components with React Hooks
-   - Implements custom hooks for business logic separation
-   - Uses context providers for state management
-   - Employs memo and useMemo for performance optimization
-
-2. **State Management**
-   - Redux Toolkit for global state management
-   - Local state with useState for component-specific data
-   - AsyncStorage for persistent data storage
-   - Real-time updates using WebSocket connections
-
-3. **Navigation System**
-   - Expo Router for type-safe navigation
-   - Bottom tab navigation for main screens
-   - Stack navigation for detailed views
-   - Modal presentations for quick actions
-
-4. **UI Implementation**
-   - React Native Paper for Material Design components
-   - Custom styled-components for consistent theming
-   - Responsive layouts using Flexbox
-   - Native animations for smooth transitions
-
-### Backend Services
-
-The backend infrastructure is built on a microservices architecture using Node.js and Express:
-
-1. **API Server**
-   - RESTful endpoints for CRUD operations
-   - JWT authentication for secure access
-   - Rate limiting for API protection
-   - Request validation using Joi
-   - Error handling middleware
-   - Logging with Winston
-
-2. **Database Layer**
-   - MongoDB for task and user data storage
-   - Redis for caching and session management
-   - Mongoose ODM for data modeling
-   - Indexing for query optimization
-   - Data validation at schema level
-
-3. **Authentication Service**
-   - JWT token generation and validation
-   - Refresh token rotation
-   - Password hashing with bcrypt
-   - OAuth2 integration for social login
-   - Session management
-
-4. **Task Management Service**
-   - Task CRUD operations
-   - Priority calculation algorithms
-   - Due date management
-   - Category organization
-   - Recurring task handling
-
-### AI/ML Integration
-
-TaskEase leverages advanced artificial intelligence and machine learning components to create a truly intelligent task management system. Our implementation focuses on three key areas: natural language processing, predictive analytics, and contextual awareness.
-
-1. **OpenAI Integration**
-   The core of our intelligent task processing relies on OpenAI's GPT-4 model, which we use in several sophisticated ways:
-
-   a) **Natural Language Task Processing**
-   - Converts user input into structured task data
-   - Extracts key parameters like deadlines, priority, and category
-   - Identifies task dependencies and relationships
-   - Implementation example:
-     ```javascript
-     const generateSmartContext = async (tasks, analytics, weather) => {
-       const completion = await openai.createCompletion({
-         model: "gpt-4",
-         prompt: generateContextPrompt(tasks, analytics, weather),
-         max_tokens: 150,
-         temperature: 0.7
-       });
-       return parseCompletionResponse(completion.data);
-     };
-     ```
-
-   b) **Context-Aware Recommendations**
-   - Analyzes user's working patterns
-   - Considers environmental factors
-   - Adapts to user's energy levels
-   - Provides personalized scheduling suggestions
-
-   c) **Smart Categorization**
-   - Automatically categorizes tasks based on content
-   - Learns from user corrections
-   - Maintains consistency across similar tasks
-   - Adapts to user's personal categorization style
-
-2. **Machine Learning Models**
-   Our application employs several custom-trained models for different aspects of task management:
-
-   a) **Priority Prediction Model**
-   - Uses TensorFlow.js for client-side inference
-   - Features considered:
-     * Task description semantics
-     * User's historical patterns
-     * Deadline proximity
-     * Task dependencies
-     * Project context
-   - Continuous learning from user interactions
-   - Accuracy improvement through feedback loops
-
-   b) **User Behavior Analysis**
-   - Tracks productivity patterns
-   - Identifies optimal working hours
-   - Monitors task completion patterns
-   - Adapts to changing user habits
-   - Implementation focuses:
-     * Pattern recognition
-     * Anomaly detection
-     * Trend analysis
-     * Behavioral prediction
-
-   c) **Energy Level Estimation**
-   - Combines multiple data sources:
-     * Time of day
-     * Previous task completion rates
-     * Break patterns
-     * Device usage patterns
-     * External factors (weather, calendar)
-   - Provides real-time energy level predictions
-   - Suggests optimal task scheduling
-
-3. **Context Engine**
-   The context engine is a sophisticated system that processes multiple data streams to provide intelligent task management:
-
-   a) **Data Integration**
-   - Real-time weather data processing
-   - Calendar event analysis
-   - Location-based context awareness
-   - Device status monitoring
-   - External API integration
-
-   b) **Context Processing Pipeline**
-   ```plaintext
-   Raw Data Collection → Data Normalization → Feature Extraction 
-   → Context Analysis → Pattern Matching → Recommendation Generation
-   ```
-
-   c) **Adaptive Learning System**
-   - Continuously updates user preferences
-   - Refines recommendation accuracy
-   - Adjusts to seasonal changes
-   - Incorporates feedback loops
-
-4. **Model Training and Optimization**
-   Our AI models undergo continuous improvement through:
-
-   a) **Training Process**
-   - Initial training on anonymized user data
-   - Fine-tuning with user-specific patterns
-   - Regular retraining with new data
-   - Performance monitoring and optimization
-
-   b) **Model Evaluation Metrics**
-   - Prediction accuracy
-   - Response time
-   - Resource utilization
-   - User satisfaction scores
-
-   c) **Optimization Techniques**
-   - Model quantization for mobile devices
-   - Batch prediction processing
-   - Caching of frequent predictions
-   - Efficient model architecture selection
-
-5. **Privacy and Security Considerations**
-   Our AI implementation prioritizes user privacy:
-
-   a) **Data Protection**
-   - Local processing when possible
-   - Encrypted data transmission
-   - Anonymous data aggregation
-   - Secure model storage
-
-   b) **User Control**
-   - Opt-in for advanced features
-   - Data usage transparency
-   - Control over data sharing
-   - Clear privacy settings
-
-6. **Future AI Enhancements**
-   Planned improvements to our AI system include:
-
-   a) **Advanced Features**
-   - Multi-modal input processing
-   - Enhanced context understanding
-   - Improved prediction accuracy
-   - More sophisticated recommendations
-
-   b) **Technical Improvements**
-   - Reduced model size
-   - Faster inference time
-   - Better battery efficiency
-   - Enhanced offline capabilities
-
-### Cloud Infrastructure
-
-The application is deployed using a containerized architecture:
-
-1. **Docker Configuration**
-   ```dockerfile
-   # API Server
-   FROM node:16-alpine
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm install
-   COPY . .
-   EXPOSE 3000
-   CMD ["npm", "start"]
-   ```
-
-2. **Kubernetes Deployment**
-   - Horizontal pod autoscaling
-   - Load balancing configuration
-   - Health checks and monitoring
-   - Rolling updates strategy
-
-3. **CI/CD Pipeline**
-   - GitHub Actions for automated testing
-   - Docker image building and pushing
-   - Automated deployment to staging
-   - Production deployment approval gates
-
-### Data Flow and Processing
-
-1. **Task Creation Flow**
-   ```plaintext
-   User Input → NLP Processing → Category Assignment → Priority Calculation 
-   → Schedule Optimization → Database Storage → Real-time Update
-   ```
-
-2. **Smart Context Generation**
-   ```plaintext
-   User Data + External Data → Context Engine → ML Processing 
-   → Recommendation Generation → UI Update
-   ```
-
-3. **Analytics Processing**
-   ```plaintext
-   User Actions → Event Collection → Data Aggregation 
-   → ML Analysis → Insight Generation
-   ```
-
-### Security Implementation
-
-1. **Data Protection**
-   - End-to-end encryption for sensitive data
-   - Secure storage of API keys
-   - Data sanitization
-   - Input validation
-
-2. **Authentication Flow**
-   ```plaintext
-   Login Request → JWT Generation → Token Storage → 
-   Request Authorization → Token Refresh → Logout
-   ```
-
-3. **API Security**
-   - CORS configuration
-   - Rate limiting
-   - Request validation
-   - Error handling
-
-### Performance Optimizations
-
-1. **Frontend Optimizations**
-   - Component memoization
-   - Lazy loading of routes
-   - Image optimization
-   - Cache management
-
-2. **Backend Optimizations**
-   - Database indexing
-   - Query optimization
-   - Response caching
-   - Connection pooling
-
-3. **Network Optimizations**
-   - API response compression
-   - Batch requests
-   - WebSocket for real-time updates
-   - CDN integration
-
-### Error Handling and Monitoring
-
-1. **Error Management**
-   - Global error boundary
-   - Error logging service
-   - User-friendly error messages
-   - Automatic retry mechanisms
-
-2. **Monitoring System**
-   - Performance metrics collection
-   - Error tracking
-   - User behavior analytics
-   - System health monitoring
-
-This technical implementation ensures TaskEase delivers a robust, scalable, and maintainable solution for intelligent task management.
-
 ### Focus Timer Implementation Flow
+The Focus Timer implementation represents a sophisticated Pomodoro-based productivity system that goes beyond basic timing functionality. The flow begins with the Timer Controls, where users initiate a 25-minute focus session, followed by a 5-minute break. Each completed session triggers the Session Tracking system, which stores detailed metrics about the session and updates daily statistics. These statistics feed into an analytics engine that generates insights about productivity patterns. The Break Management system ensures proper work-rest balance by managing break timers and seamlessly transitioning between focus and break periods. This implementation helps users maintain optimal productivity while preventing burnout through structured work intervals.
 
 ```mermaid
 graph TD
@@ -1028,6 +736,7 @@ graph TD
 ```
 
 ### Voice Input Processing
+The voice input processing system in TaskEase provides a natural and efficient way to create tasks through speech. The process begins in the Voice Recording phase, where high-quality audio is captured and processed. The Speech Processing phase converts this audio to text and utilizes OpenAI's natural language processing capabilities to extract relevant task details. The Task Creation phase generates a structured task from the processed information, presents it to the user for verification, and saves it to the system. This implementation ensures accurate task creation while maintaining a seamless user experience.
 
 ```mermaid
 graph TD
@@ -1050,6 +759,7 @@ graph TD
 ```
 
 ### Smart Context Generation Flow
+The Smart Context Generation system represents the intelligent core of TaskEase, combining multiple data streams to provide contextually aware task management. The Data Collection phase aggregates information from various sources including user tasks, weather data, and temporal factors. This data feeds into the Processing phase, where the Context Engine utilizes OpenAI's analytical capabilities to generate meaningful insights and priority suggestions. The UI Updates phase ensures these insights are seamlessly integrated into the user interface through dashboard updates, task recommendations, and energy insights, creating a dynamic and responsive task management experience.
 
 ```mermaid
 graph TD
@@ -1073,6 +783,7 @@ graph TD
 ```
 
 ### Analytics Data Flow
+The Analytics Data Flow in TaskEase implements a comprehensive system for tracking and analyzing user productivity patterns. The Data Collection phase captures four key metrics: task completion rates, focus session statistics, break patterns, and user interactions. This data is processed through the Analytics Engine, which calculates various performance metrics and generates detailed reports. The Visualization phase presents these insights through an intuitive dashboard featuring charts, progress indicators, and productivity scores, enabling users to understand and optimize their task management patterns.
 
 ```mermaid
 graph TD
@@ -1097,6 +808,7 @@ graph TD
 ```
 
 ### Database Schema
+The database schema of TaskEase is designed to efficiently manage the complex relationships between users, tasks, focus sessions, and analytics data. The User entity serves as the central point, maintaining core user information and preferences. The Task entity captures comprehensive task details including category, priority, and temporal information. Focus Sessions track detailed statistics about productivity periods, while the Analytics entity maintains aggregated metrics and insights. This structured approach ensures efficient data retrieval and maintains data integrity across all application features.
 
 ```mermaid
 erDiagram
