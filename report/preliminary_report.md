@@ -5,6 +5,9 @@
 
 # Table of Contents
 
+- [TaskEase: An Intelligent Task Management System](#taskease-an-intelligent-task-management-system)
+      - [Final Project Report](#final-project-report)
+- [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
   - [Project Overview](#project-overview)
   - [Innovation and Motivation](#innovation-and-motivation)
@@ -36,19 +39,19 @@
   - [Implications for TaskEase](#implications-for-taskease)
   - [References](#references-1)
 - [Design Document](#design-document)
-  - [Project Overview](#project-overview-1)
+  - [System Overview](#system-overview)
     - [System Architecture Overview](#system-architecture-overview)
     - [Task Flow Architecture](#task-flow-architecture)
-    - [Development Timeline](#development-timeline)
+    - [Implementation Timeline](#implementation-timeline)
     - [Application Flow](#application-flow)
   - [Domain and User Analysis](#domain-and-user-analysis)
     - [Target Users and Needs Analysis](#target-users-and-needs-analysis)
   - [Design Philosophy and Choices](#design-philosophy-and-choices)
     - [UI/UX Design Principles](#uiux-design-principles)
-  - [Technology Stack and Implementation](#technology-stack-and-implementation)
+  - [Technical Architecture and Implementation](#technical-architecture-and-implementation)
     - [Core Technologies](#core-technologies)
     - [API Integration](#api-integration)
-    - [Development Timeline](#development-timeline-1)
+    - [Implementation Timeline](#implementation-timeline-1)
   - [Testing and Evaluation Strategy](#testing-and-evaluation-strategy)
     - [Testing Approach](#testing-approach)
     - [Evaluation Metrics](#evaluation-metrics)
@@ -56,10 +59,6 @@
     - [Mobile App Interface](#mobile-app-interface)
     - [UI Components and Styling](#ui-components-and-styling)
     - [Screen Layouts](#screen-layouts)
-  - [Technology Stack and Implementation](#technology-stack-and-implementation-1)
-    - [Core Technologies](#core-technologies-1)
-    - [API Integration](#api-integration-1)
-    - [Data Flow Architecture](#data-flow-architecture)
   - [Project Structure and Organization](#project-structure-and-organization)
     - [Code Organization](#code-organization)
     - [Development Workflow](#development-workflow)
@@ -454,11 +453,13 @@ This literature review informs TaskEase's development in several key ways:
 
 # Design Document
 
-## Project Overview
+## System Overview
 
 TaskEase is a modern task management application designed to address the growing complexity of personal and professional task management through intelligent automation and context awareness. Based on the CM3050 Mobile Development template "Task manager mobile app", TaskEase extends beyond basic task management to create an adaptive, AI-powered solution that learns from user behavior and optimizes task organization.
 
 ### System Architecture Overview
+The system architecture of TaskEase follows a modern, scalable design pattern optimized for mobile development. The frontend is built using React Native with Expo for cross-platform compatibility, utilizing Redux for state management and React Navigation for seamless routing. The backend infrastructure consists of Express.js-based microservices, including dedicated Task and OpenAI services for handling core functionality and AI processing respectively. Data persistence is achieved through MongoDB for document storage, with Redis providing caching capabilities to optimize performance. This architecture enables efficient handling of real-time updates, background processing for AI features, and seamless synchronization across devices while maintaining high availability and fault tolerance. The system is designed to be horizontally scalable, with each component capable of independent scaling based on load requirements.
+
 
 ```mermaid
 graph TD
@@ -490,6 +491,39 @@ graph TD
 ```
 
 ### Task Flow Architecture
+The task flow architecture in TaskEase follows a systematic process from input to storage:
+
+* **User Input Processing**
+  - Captures voice or text input from the user interface
+  - Routes input to appropriate processing pipeline
+  - Validates input format and content
+
+* **Natural Language Processing** 
+  - Analyzes input using OpenAI's language models
+  - Extracts key task parameters (deadline, priority, category)
+  - Identifies task dependencies and relationships
+
+* **Task Classification**
+  - Categorizes tasks based on content analysis
+  - Assigns appropriate labels and tags
+  - Maps task to predefined categories (Work, Health, Study, Leisure)
+
+* **Priority Assignment**
+  - Evaluates task urgency and importance
+  - Considers user preferences and patterns
+  - Assigns priority level (High, Medium, Low)
+
+* **Storage and Synchronization**
+  - Creates structured task object
+  - Stores task in local database
+  - Syncs with cloud storage
+  - Updates UI components
+
+* **User Feedback Loop**
+  - Confirms successful task creation
+  - Provides visual feedback on task status
+  - Enables immediate task modification if needed
+
 
 ```mermaid
 graph TD
@@ -511,51 +545,16 @@ graph TD
     end
 ```
 
-### Development Timeline
-
-```mermaid
-gantt
-    title TaskEase Development Timeline
-    dateFormat YYYY-MM-DD
-    
-    section Project Setup (November 2024)
-    Environment Setup           :2024-11-01, 7d
-    Architecture Design        :2024-11-08, 7d
-    Initial Project Structure  :2024-11-15, 7d
-    Basic Navigation Setup     :2024-11-22, 7d
-    
-    section Core Features (December 2024)
-    Task CRUD Implementation   :2024-12-01, 14d
-    UI Components Development  :2024-12-01, 21d
-    State Management Setup     :2024-12-15, 14d
-    Basic Styling             :2024-12-22, 10d
-    
-    section AI Integration (January 2025)
-    OpenAI Integration        :2025-01-01, 14d
-    Voice Input Setup         :2025-01-08, 14d
-    Smart Context Development :2025-01-15, 14d
-    ML Model Integration      :2025-01-22, 10d
-    
-    section Enhanced Features (February 2025)
-    Analytics Dashboard       :2025-02-01, 14d
-    Calendar Integration     :2025-02-08, 14d
-    Focus Timer              :2025-02-15, 14d
-    Settings Implementation  :2025-02-22, 7d
-    
-    section Testing & Refinement (March 2025)
-    Unit Testing             :2025-03-01, 14d
-    Integration Testing      :2025-03-08, 14d
-    User Testing             :2025-03-15, 14d
-    Bug Fixes               :2025-03-22, 10d
-    
-    section Deployment (April 2025)
-    Beta Release            :2025-04-01, 7d
-    Final Testing          :2025-04-08, 7d
-    Production Deploy      :2025-04-15, 7d
-    Post-Deploy Monitoring :2025-04-22, 7d
-```
 
 ### Application Flow
+The application flow in TaskEase follows a logical progression through key user interactions and system processes. The flow is organized into three main components: Main Navigation, Task Creation, and Task Management, each serving distinct but interconnected purposes.
+
+The Main Navigation flow demonstrates the core pathways users can take through the application, with the Dashboard acting as the central hub. From here, users can access the Task List for detailed task management, Calendar for schedule overview, Focus Timer for productivity sessions, and Settings for application customization.
+
+The Task Creation flow illustrates the dual input methods available to users. Whether through the Add Task Button leading to voice input or manual entry, all tasks undergo OpenAI Processing to ensure intelligent categorization and priority assignment. Users can preview and modify the processed task before saving, ensuring accuracy and user control.
+
+The Task Management flow shows the system processes that occur after task creation. When a task is saved, it triggers a cascade of updates: first refreshing the UI for immediate user feedback, then syncing with the backend server for data persistence, and finally updating local storage to maintain offline functionality. This multi-step process ensures data consistency across all application layers while maintaining a responsive user experience.
+
 
 ```mermaid
 graph TD
@@ -591,24 +590,27 @@ TaskEase's user analysis reveals a diverse target audience with specific needs a
 The user needs analysis, visualized in our mindmap, identifies four core areas of functionality that our users require. Task Management forms the foundation, with users needing quick task entry mechanisms, intuitive priority setting, and reliable deadline tracking. Smart Features leverage AI technology to provide intelligent suggestions and context-aware automation, addressing the need for more efficient task organization. Integration capabilities ensure seamless connection with existing tools like calendars and email systems, while Wellness features focus on maintaining user well-being through structured breaks and work-life balance tracking.
 
 ```mermaid
-mindmap
-    root((User Needs))
-        Task Management
-            Quick task entry
-            Priority setting
-            Deadline tracking
-        Smart Features
-            AI suggestions
-            Context awareness
-            Automated scheduling
-        Integration
-            Calendar sync
-            Email integration
-            File attachments
-        Wellness
-            Break reminders
-            Work-life balance
-            Progress tracking
+graph TD
+    A[User Needs] --> B[Task Management]
+    A --> C[Smart Features]
+    A --> D[Integration]
+    A --> E[Wellness]
+    
+    B --> B1[Quick task entry]
+    B --> B2[Priority setting]
+    B --> B3[Deadline tracking]
+    
+    C --> C1[AI suggestions]
+    C --> C2[Context awareness]
+    C --> C3[Automated scheduling]
+    
+    D --> D1[Calendar sync]
+    D --> D2[Email integration]
+    D --> D3[File attachments]
+    
+    E --> E1[Break reminders]
+    E --> E2[Work-life balance]
+    E --> E3[Progress tracking]
 ```
 
 ## Design Philosophy and Choices
@@ -631,7 +633,7 @@ graph LR
     E --> I[Voice Input]
 ```
 
-## Technology Stack and Implementation
+## Technical Architecture and Implementation
 
 ### Core Technologies
 The technology stack of TaskEase is carefully chosen to provide a robust, scalable, and maintainable application architecture. The Frontend Stack centers around React Native, providing cross-platform compatibility while maintaining native performance. Redux Toolkit manages application state with predictable updates, while React Navigation enables smooth screen transitions. Styled Components ensure consistent styling across the application.
@@ -672,7 +674,7 @@ graph LR
     A --> E[Location Services]
 ```
 
-### Development Timeline
+### Implementation Timeline
 The development timeline for TaskEase follows a carefully structured approach spanning six months, from November 2024 to April 2025. The Project Setup phase in November establishes the foundation with environment configuration and architecture design. Core Features development in December focuses on essential task management functionality and UI components. January 2025 is dedicated to AI Integration, implementing OpenAI processing and voice input capabilities. Enhanced Features development in February adds sophisticated features like the analytics dashboard and focus timer. March focuses on comprehensive Testing & Refinement, while April culminates in the final Deployment phase with beta testing and production release.
 
 ```mermaid
@@ -718,6 +720,37 @@ gantt
 ```
 
 ## Testing and Evaluation Strategy
+The testing and evaluation strategy for TaskEase follows a comprehensive approach combining automated testing, manual testing, and user feedback collection. The strategy is designed to ensure both technical reliability and user satisfaction through multiple testing layers and evaluation metrics.
+
+### Testing Layers
+
+1. **Unit Testing**
+   - Component-level testing
+   - Business logic validation
+   - State management verification
+   - Mock service integration
+
+2. **Integration Testing**
+   - API endpoint validation
+   - Service communication testing
+   - Data flow verification
+   - State persistence testing
+
+3. **End-to-End Testing**
+   - User flow validation
+   - Cross-platform compatibility
+   - Performance benchmarking
+   - Error handling verification
+
+4. **User Acceptance Testing**
+   - Beta testing program
+   - Usability studies
+   - Feature validation
+   - Bug reporting system
+
+### Evaluation Framework
+
+The evaluation framework incorporates both quantitative and qualitative metrics to assess the application's performance, usability, and user satisfaction:
 
 ### Testing Approach
 
@@ -758,6 +791,43 @@ graph TD
 ## Visual Design
 
 ### Mobile App Interface
+The mobile app interface follows a clean, minimalist design approach focused on clarity and ease of use. Key interface elements include:
+
+1. **Navigation Bar**
+   - Persistent bottom navigation
+   - Clear iconography with labels
+   - Active state highlighting
+   - Quick access to core features
+
+2. **Home Screen**
+   - Priority task overview
+   - Progress visualization
+   - Smart suggestions panel
+   - Quick action buttons
+
+3. **Task Management**
+   - List/Board/Timeline views
+   - Drag-and-drop organization
+   - Visual task categorization
+   - Status indicators
+
+4. **Calendar View**
+   - Month/Week/Day layouts
+   - Task integration
+   - Event synchronization
+   - Time block visualization
+
+5. **Analytics Dashboard**
+   - Progress charts
+   - Productivity metrics
+   - Habit tracking
+   - Custom reports
+
+The interface maintains consistency through:
+- Standardized spacing and alignment
+- Unified color scheme application
+- Consistent typography hierarchy
+- Cohesive component styling
 
 ```mermaid
 graph TD
@@ -784,6 +854,27 @@ graph TD
 ```
 
 ### UI Components and Styling
+The UI components and styling in TaskEase follow a modular and reusable design pattern. Each component is built with accessibility and responsiveness in mind, ensuring a consistent user experience across different devices and platforms. The styling system uses a combination of global themes and component-specific styles to maintain visual consistency while allowing for contextual variations.
+
+Key aspects of the UI implementation include:
+
+* **Component Architecture**
+  - Reusable base components
+  - Consistent props interface
+  - Standardized styling patterns
+  - Accessibility-first design
+
+* **Style Management**
+  - Global theme variables
+  - Component-scoped styles
+  - Responsive breakpoints
+  - Dark/Light mode support
+
+* **Interactive Elements**
+  - Touch-friendly targets
+  - Visual feedback states
+  - Smooth transitions
+  - Loading indicators
 
 1. **Color Scheme**
    ```mermaid
@@ -801,6 +892,40 @@ graph TD
    - Animated transitions
 
 ### Screen Layouts
+The screen layouts in TaskEase follow a consistent grid-based structure that adapts to different screen sizes and orientations. Each screen is designed with a clear visual hierarchy and intuitive navigation patterns.
+
+1. **Dashboard Layout**
+   ```mermaid
+   graph TD
+       A[Header] --> B[Smart Context Bar]
+       A --> C[Quick Stats]
+       C --> D[Task Overview]
+       D --> E[Focus Timer]
+   ```
+
+2. **Task Management Layout**
+   ```mermaid
+   graph LR
+       A[Task List] --> B[Filter Bar]
+       A --> C[Sort Options]
+       A --> D[Category View]
+   ```
+
+3. **Focus Mode Layout**
+   ```mermaid
+   graph TD
+       A[Timer Display] --> B[Controls]
+       B --> C[Statistics]
+       C --> D[Break Timer]
+   ```
+
+4. **Settings Layout**
+   ```mermaid
+   graph LR
+       A[User Profile] --> B[Preferences]
+       B --> C[Notifications]
+       C --> D[Integrations]
+   ```
 
 ```mermaid
 graph TD
@@ -818,74 +943,26 @@ graph TD
     end
 ```
 
-## Technology Stack and Implementation
-
-### Core Technologies
-
-```mermaid
-graph TD
-    subgraph "Frontend Stack"
-        A[React Native] --> B[Mobile App]
-        C[Redux Toolkit] --> B
-        D[React Navigation] --> B
-        E[Styled Components] --> B
-    end
-    
-    subgraph "Backend Stack"
-        F[Node.js] --> G[API Server]
-        H[Express.js] --> G
-        I[MongoDB] --> G
-        J[Redis] --> G
-    end
-    
-    subgraph "AI/ML Stack"
-        K[OpenAI GPT-4] --> L[Task Analysis]
-        M[TensorFlow.js] --> N[User Behavior]
-        O[scikit-learn] --> P[Priority Prediction]
-    end
-```
-
-### API Integration
-
-1. **External APIs**
-   ```mermaid
-   graph LR
-    A[TaskEase] --> B[Google Calendar API]
-    A --> C[OpenAI API]
-    A --> D[Weather API]
-    A --> E[Location Services]
-   ```
-
-2. **AI Model Integration**
-   - GPT-4 for natural language task parsing
-   - Custom ML models for priority prediction
-   - TensorFlow.js for client-side predictions
-
-### Data Flow Architecture
-
-```mermaid
-graph TD
-    subgraph "Client Layer"
-        A[Mobile App] --> B[API Gateway]
-        C[Web App] --> B
-    end
-    
-    subgraph "Service Layer"
-        B --> D[Auth Service]
-        B --> E[Task Service]
-        B --> F[ML Service]
-    end
-    
-    subgraph "Data Layer"
-        D --> G[User DB]
-        E --> H[Task DB]
-        F --> I[ML Models]
-    end
-```
-
 ## Project Structure and Organization
 
 ### Code Organization
+
+The codebase follows a modular and scalable organization pattern. Here's a breakdown of the key directories and their purposes:
+
+#### Frontend Structure
+- `src/components/`: Reusable UI components
+- `src/screens/`: Main application views/pages
+- `src/redux/`: State management with actions, reducers, and store
+- `src/services/`: API integration and external service handlers
+- `src/utils/`: Helper functions and utilities
+
+#### Backend Structure  
+- `server/routes/`: API endpoint definitions
+- `server/controllers/`: Request handling logic
+- `server/models/`: Database schemas and models
+- `server/services/`: Business logic and external integrations
+
+This organization promotes separation of concerns, code reusability, and easier maintenance. Components are structured to be modular and self-contained, while the backend follows REST principles with clear separation between routing, business logic, and data access layers.
 
 ```mermaid
 graph TD
@@ -906,6 +983,35 @@ graph TD
 ```
 
 ### Development Workflow
+Our development workflow follows industry best practices to ensure code quality and smooth collaboration:
+
+1. **Feature Branches**
+   - Developers create branches for new features
+   - Branch naming convention: `feature/feature-name`
+   - Regular commits with descriptive messages
+
+2. **Development Phase**
+   - Local development and testing
+   - Code style and linting checks
+   - Unit test coverage requirements
+
+3. **Testing & Review**
+   - Automated test suite execution
+   - Manual testing of new features
+   - Peer code review process
+   - Address review feedback
+
+4. **Quality Assurance**
+   - Integration testing
+   - User acceptance testing
+   - Performance benchmarking
+   - Security scanning
+
+5. **Deployment**
+   - Staging environment validation
+   - Final approval from team lead
+   - Automated deployment process
+   - Post-deployment monitoring
 
 ```mermaid
 graph LR
@@ -920,6 +1026,8 @@ graph LR
 ## Testing and Quality Assurance
 
 ### Automated Testing Strategy
+
+
 
 ```mermaid
 graph TD
@@ -947,24 +1055,27 @@ graph TD
 
 2. **Evaluation Criteria**
    ```mermaid
-   mindmap
-    root((Evaluation))
-        Performance
-            Response time
-            Load handling
-            Battery usage
-        Usability
-            Task completion
-            Navigation
-            Learnability
-        Features
-            AI accuracy
-            Integration
-            Offline mode
-        User Satisfaction
-            NPS score
-            Retention
-            Engagement
+   graph TD
+    A[Evaluation Criteria] --> B[Performance]
+    A --> C[Usability]
+    A --> D[Features]
+    A --> E[User Satisfaction]
+    
+    B --> B1[Response time]
+    B --> B2[Load handling]
+    B --> B3[Battery usage]
+    
+    C --> C1[Task completion]
+    C --> C2[Navigation]
+    C --> C3[Learnability]
+    
+    D --> D1[AI accuracy]
+    D --> D2[Integration]
+    D --> D3[Offline mode]
+    
+    E --> E1[NPS score]
+    E --> E2[Retention]
+    E --> E3[Engagement]
    ```
 
 ### Quality Metrics
