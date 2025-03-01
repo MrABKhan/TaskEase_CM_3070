@@ -7,6 +7,17 @@ import TaskList from '../components/TaskList';
 import api, { Task } from '../services/api';
 import { getCategoryColor } from '../utils/taskUtils';
 
+// Debug logger utility
+const DEBUG = false; // Toggle this to enable/disable debug logs
+
+const logger = {
+  debug: (...args: any[]) => {
+    if (DEBUG) console.log(...args);
+  },
+  info: (...args: any[]) => console.log(...args),
+  error: (...args: any[]) => console.error(...args)
+};
+
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Task[]>([]);
@@ -17,9 +28,9 @@ export default function CalendarScreen() {
   const loadTasksForDate = async (date: string) => {
     try {
       setLoading(true);
-      console.log('📅 Loading tasks for date:', date);
       const tasks = await api.getTasks({ date });
-      console.log('📅 Received tasks for date:', tasks);
+      logger.info(`📅 Date ${date}: Found ${tasks.length} tasks`);
+      logger.debug('📅 Tasks for date:', tasks);
       
       // Convert the target date to start of day for comparison
       const compareDate = new Date(date);
@@ -32,7 +43,7 @@ export default function CalendarScreen() {
         return taskDate.getTime() === compareDate.getTime();
       }));
     } catch (error) {
-      console.error('Error loading tasks for date:', error);
+      logger.error('Error loading tasks for date:', error);
       setSelectedTasks([]);
     } finally {
       setLoading(false);
@@ -42,9 +53,9 @@ export default function CalendarScreen() {
   // Load tasks for the current month
   const loadMonthTasks = async (month: string) => {
     try {
-      console.log('📅 Loading tasks for month:', month);
       const tasks = await api.getTasks({ month });
-      console.log('📅 Received tasks:', tasks);
+      logger.info(`📅 Month ${month}: Found ${tasks.length} tasks`);
+      logger.debug('📅 Month tasks:', tasks);
       
       // Group tasks by date
       const tasksByDate = tasks.reduce((acc: Record<string, Task[]>, task: Task) => {
@@ -58,11 +69,10 @@ export default function CalendarScreen() {
           acc[dateKey] = [];
         }
         acc[dateKey].push(task);
-        console.log(`📅 Grouped task for date ${dateKey}:`, task.title);
         return acc;
       }, {});
 
-      console.log('📅 Tasks grouped by date:', tasksByDate);
+      logger.debug('📅 Tasks grouped by date:', tasksByDate);
 
       // Create marked dates object for calendar
       const marked = Object.keys(tasksByDate).reduce((acc, date) => {
@@ -70,7 +80,7 @@ export default function CalendarScreen() {
           marked: true,
           dots: tasksByDate[date].map((task: Task) => ({
             color: getCategoryColor(task.category),
-            key: task.id // Add a unique key for each dot
+            key: task.id
           })),
           selected: date === selectedDate,
           selectedColor: date === selectedDate ? '#007AFF' : undefined,
@@ -79,10 +89,11 @@ export default function CalendarScreen() {
         return acc;
       }, {} as Record<string, any>);
 
-      console.log('📅 Setting marked dates:', marked);
+      logger.info(`📅 Calendar marked ${Object.keys(marked).length} dates with tasks`);
+      logger.debug('📅 Marked dates:', marked);
       setMarkedDates(marked);
     } catch (error) {
-      console.error('Error loading month tasks:', error);
+      logger.error('Error loading month tasks:', error);
     }
   };
 
@@ -107,17 +118,14 @@ export default function CalendarScreen() {
 
   // Load tasks when month changes
   const handleMonthChange = (month: any) => {
-    console.log('📅 Month changed:', month);
     const monthString = month.dateString.substring(0, 7);
-    console.log('📅 Loading tasks for month string:', monthString);
+    logger.info(`📅 Changing to month: ${monthString}`);
     loadMonthTasks(monthString);
     
     // If the selected date is in this month, refresh its tasks
     if (selectedDate && selectedDate.startsWith(monthString)) {
-      console.log('📅 Refreshing tasks for selected date:', selectedDate);
       loadTasksForDate(selectedDate);
     } else {
-      console.log('📅 Clearing selected tasks - date not in current month');
       setSelectedTasks([]);
     }
   };
@@ -125,13 +133,12 @@ export default function CalendarScreen() {
   // Load tasks for selected date
   const handleDayPress = async (day: any) => {
     const newDate = day.dateString;
-    console.log('📅 Day pressed:', newDate);
+    logger.info(`📅 Selected date: ${newDate}`);
     setSelectedDate(newDate);
     await loadTasksForDate(newDate);
     
     // Update marked dates to show selection
     setMarkedDates((prev: Record<string, any>) => {
-      console.log('📅 Previous marked dates:', prev);
       const updated = {
         ...prev,
         [newDate]: {
@@ -141,7 +148,7 @@ export default function CalendarScreen() {
           selectedTextColor: '#ffffff',
         }
       };
-      console.log('📅 Updated marked dates:', updated);
+      logger.debug('📅 Updated marked dates:', updated);
       return updated;
     });
   };
@@ -157,7 +164,7 @@ export default function CalendarScreen() {
       // Refresh calendar data to update dots
       await loadMonthTasks(selectedDate.substring(0, 7));
     } catch (error) {
-      console.error('Error updating task:', error);
+      logger.error('Error updating task:', error);
     }
   };
 
@@ -169,7 +176,7 @@ export default function CalendarScreen() {
       // Refresh calendar data to update dots
       await loadMonthTasks(selectedDate.substring(0, 7));
     } catch (error) {
-      console.error('Error deleting task:', error);
+      logger.error('Error deleting task:', error);
     }
   };
 

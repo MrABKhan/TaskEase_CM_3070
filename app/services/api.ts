@@ -1,6 +1,17 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 
+// Debug logger utility
+const DEBUG = false; // Toggle this to enable/disable debug logs
+
+const logger = {
+  debug: (...args: any[]) => {
+    if (DEBUG) console.log(...args);
+  },
+  info: (...args: any[]) => console.log(...args),
+  error: (...args: any[]) => console.error(...args)
+};
+
 // Use 10.0.2.2 for Android emulator to access host machine's localhost
 // For web browser, continue using localhost
 const API_URL = Platform.select({
@@ -8,7 +19,7 @@ const API_URL = Platform.select({
   default: 'http://localhost:3000/api',  // Default for web and iOS
 });
 
-console.log('🌐 Using API URL:', API_URL);
+logger.info('🌐 Using API URL:', API_URL);
 
 const TEMP_USER_ID = 'user123';
 
@@ -32,27 +43,27 @@ export interface Task {
 }
 
 const logAxiosError = (error: AxiosError) => {
-  console.error('🔍 Detailed Error Information:');
-  console.error('- Message:', error.message);
-  console.error('- Code:', error.code);
-  console.error('- Request URL:', error.config?.url);
-  console.error('- Request Method:', error.config?.method?.toUpperCase());
-  console.error('- Request Headers:', error.config?.headers);
-  console.error('- Request Data:', error.config?.data);
+  logger.error('🔍 Detailed Error Information:');
+  logger.error('- Message:', error.message);
+  logger.error('- Code:', error.code);
+  logger.error('- Request URL:', error.config?.url);
+  logger.error('- Request Method:', error.config?.method?.toUpperCase());
+  logger.error('- Request Headers:', error.config?.headers);
+  logger.error('- Request Data:', error.config?.data);
   if (error.response) {
-    console.error('- Response Status:', error.response.status);
-    console.error('- Response Data:', error.response.data);
+    logger.error('- Response Status:', error.response.status);
+    logger.error('- Response Data:', error.response.data);
   }
   if (error.request) {
-    console.error('- Request was made but no response received');
-    console.error('- Request Details:', error.request);
+    logger.error('- Request was made but no response received');
+    logger.error('- Request Details:', error.request);
   }
 };
 
 const api = {
   // Get tasks with filtering
   getTasks: async (params: { month?: string; date?: string } = {}) => {
-    console.log('📤 Fetching tasks with params:', { ...params, userId: TEMP_USER_ID });
+    logger.info('📤 Fetching tasks with params:', { ...params, userId: TEMP_USER_ID });
     try {
       let response;
       if (params.month) {
@@ -73,7 +84,7 @@ const api = {
 
       // Handle both array and object responses
       const tasksData = response.data.tasks || response.data || [];
-      console.log('📥 Raw tasks response:', tasksData);
+      logger.debug('📥 Raw tasks response:', tasksData);
       
       const mappedTasks = tasksData.map((task: any) => ({
         id: task._id || task.id,
@@ -90,13 +101,13 @@ const api = {
         tags: task.tags || [],
       }));
       
-      console.log('🔄 Mapped tasks:', mappedTasks);
+      logger.debug('🔄 Mapped tasks:', mappedTasks);
       return mappedTasks;
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);
       } else {
-        console.error('❌ Unexpected error:', error);
+        logger.error('❌ Unexpected error:', error);
       }
       throw error;
     }
@@ -104,12 +115,12 @@ const api = {
 
   // Get today's tasks
   getTodayTasks: async () => {
-    console.log('📤 Fetching today\'s tasks for user:', TEMP_USER_ID);
+    logger.info('📤 Fetching today\'s tasks for user:', TEMP_USER_ID);
     try {
       const response = await axios.get(`${API_URL}/tasks/today`, {
         params: { userId: TEMP_USER_ID }
       });
-      console.log('📥 Raw today\'s tasks response:', response.data);
+      logger.debug('📥 Raw today\'s tasks response:', response.data);
       
       // Handle both array and object responses
       const tasksData = response.data.tasks || response.data || [];
@@ -129,51 +140,51 @@ const api = {
         tags: task.tags || [],
       }));
       
-      console.log('🔄 Mapped today\'s tasks:', mappedTasks);
+      logger.debug('🔄 Mapped today\'s tasks:', mappedTasks);
       return mappedTasks;
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);
       } else {
-        console.error('❌ Unexpected error:', error);
+        logger.error('❌ Unexpected error:', error);
       }
       throw error;
     }
   },
 
   updateTask: async (id: string, updates: Partial<Task>) => {
-    console.log('📤 Updating task:', { id, updates });
+    logger.info('📤 Updating task:', { id, updates });
     try {
       const response = await axios.put(`${API_URL}/tasks/${id}`, updates);
-      console.log('📥 Update task response:', response.data);
+      logger.debug('📥 Update task response:', response.data);
       return response.data;
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);
       } else {
-        console.error('❌ Unexpected error:', error);
+        logger.error('❌ Unexpected error:', error);
       }
       throw error;
     }
   },
 
   deleteTask: async (id: string) => {
-    console.log('📤 Deleting task:', id);
+    logger.info('📤 Deleting task:', id);
     try {
       await axios.delete(`${API_URL}/tasks/${id}`);
-      console.log('✅ Task deleted successfully');
+      logger.info('✅ Task deleted successfully');
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);
       } else {
-        console.error('❌ Unexpected error:', error);
+        logger.error('❌ Unexpected error:', error);
       }
       throw error;
     }
   },
 
   createTask: async (taskData: Partial<Task>) => {
-    console.log('📤 Creating new task:', taskData);
+    logger.info('📤 Creating new task:', taskData);
     try {
       const response = await axios.post(`${API_URL}/tasks`, {
         ...taskData,
@@ -181,7 +192,7 @@ const api = {
         notes: [],
         tags: [],
       });
-      console.log('📥 Create task response:', response.data);
+      logger.debug('📥 Create task response:', response.data);
       return {
         ...response.data,
         id: response.data._id
@@ -190,7 +201,7 @@ const api = {
       if (error instanceof AxiosError) {
         logAxiosError(error);
       } else {
-        console.error('❌ Unexpected error:', error);
+        logger.error('❌ Unexpected error:', error);
       }
       throw error;
     }
