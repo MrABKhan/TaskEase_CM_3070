@@ -1,12 +1,17 @@
 import OpenAI from 'openai';
 import { Task } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { format } from 'date-fns';
+import { format, isWeekend, isBefore, addHours } from 'date-fns';
+
+// Configuration
+const CONFIG = {
+  ENABLE_OPENAI: false, // Switch to enable/disable OpenAI API calls
+  CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
+};
 
 // Cache keys
 const SMART_CONTEXT_CACHE_KEY = 'smartContext';
 const SMART_CONTEXT_TIMESTAMP_KEY = 'smartContextTimestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Types for the smart context
 export interface SmartContext {
@@ -58,7 +63,7 @@ const isCacheValid = async (): Promise<boolean> => {
 
     const lastUpdate = new Date(timestamp).getTime();
     const now = new Date().getTime();
-    return now - lastUpdate < CACHE_DURATION;
+    return now - lastUpdate < CONFIG.CACHE_DURATION;
   } catch (error) {
     console.error('[SmartContext] Error checking cache validity:', error);
     return false;
@@ -87,59 +92,136 @@ const cacheContext = async (context: SmartContext): Promise<void> => {
   }
 };
 
-export const generateSmartContext = async (
+// Function to generate static smart context based on tasks
+const generateStaticSmartContext = (
+  tasks: Task[],
+  weatherData: any
+): SmartContext => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  
+  // Filter urgent and incomplete tasks
+  const urgentTasks = tasks.filter(t => 
+    t.priority === 'high' && 
+    !t.completed && 
+    isBefore(new Date(`${t.date}T${t.startTime}`), addHours(now, 24))
+  );
+
+  // Determine energy level based on time of day
+  let energyLevel = 'medium';
+  if (currentHour >= 9 && currentHour <= 11) energyLevel = 'high';
+  else if (currentHour >= 14 && currentHour <= 16) energyLevel = 'medium';
+  else if (currentHour >= 21 || currentHour <= 6) energyLevel = 'low';
+
+  // Determine focus state based on time
+  let focusState = 'Normal';
+  if (currentHour >= 9 && currentHour <= 12) focusState = 'Peak Focus Time';
+  else if (currentHour >= 14 && currentHour <= 17) focusState = 'Productive';
+  else if (currentHour >= 22 || currentHour <= 6) focusState = 'Rest';
+
+  // Get next task start time
+  const upcomingTasks = tasks
+    .filter(t => !t.completed && isBefore(now, new Date(`${t.date}T${t.startTime}`)))
+    .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime());
+
+  // Generate suggested activity based on time and day
+  let suggestedActivity = 'Focus on high-priority tasks';
+  if (isWeekend(now)) {
+    suggestedActivity = currentHour < 12 ? 'Plan your weekend activities' : 'Enjoy some leisure time';
+  } else if (currentHour < 12) {
+    suggestedActivity = 'Handle important tasks while energy is high';
+  } else if (currentHour >= 14 && currentHour <= 17) {
+    suggestedActivity = 'Work on creative or collaborative tasks';
+  }
+
+  // Generate insight based on task patterns
+  let insight = 'Keep up with your regular schedule';
+  const completedTasks = tasks.filter(t => t.completed);
+  if (completedTasks.length > 0) {
+    const categories = completedTasks.map(t => t.category);
+    const mostCommonCategory = categories.sort((a, b) =>
+      categories.filter(v => v === a).length - categories.filter(v => v === b).length
+    ).pop();
+    insight = `You're most productive with ${mostCommonCategory} tasks`;
+  }
+
+  // Use provided weather data or fallback
+  const weather = weatherData ? {
+    icon: getWeatherIcon(weatherData.condition),
+    temp: `${weatherData.temperature}°`,
+    condition: weatherData.condition
+  } : {
+    icon: "🌤️",
+    temp: "N/A",
+    condition: "Weather data unavailable"
+  };
+
+  return {
+    weather,
+    urgentTasks: {
+      count: urgentTasks.length,
+      nextDue: urgentTasks[0] ? format(new Date(`${urgentTasks[0].date}T${urgentTasks[0].startTime}`), 'HH:mm') : 'None'
+    },
+    focusStatus: {
+      state: focusState,
+      timeLeft: upcomingTasks[0] 
+        ? `Until ${format(new Date(`${upcomingTasks[0].date}T${upcomingTasks[0].startTime}`), 'HH:mm')}`
+        : 'No upcoming tasks'
+    },
+    energyLevel,
+    suggestedActivity,
+    nextBreak: currentHour % 2 === 0 ? 'In 30 minutes' : 'In 1 hour',
+    insight,
+    timestamp: now.toISOString(),
+    lastUpdated: format(now, 'HH:mm')
+  };
+};
+
+// Helper function to get weather icon
+const getWeatherIcon = (condition: string): string => {
+  const conditionLower = condition?.toLowerCase() || '';
+  if (conditionLower.includes('rain')) return '🌧️';
+  if (conditionLower.includes('cloud')) return '☁️';
+  if (conditionLower.includes('sun') || conditionLower.includes('clear')) return '☀️';
+  if (conditionLower.includes('snow')) return '❄️';
+  if (conditionLower.includes('storm')) return '⛈️';
+  return '🌤️';
+};
+
+// Function to generate context using OpenAI
+const generateOpenAIContext = async (
   tasks: Task[],
   analyticsData: any,
-  weatherData: any,
-  forceRefresh: boolean = false
+  weatherData: any
 ): Promise<SmartContext> => {
-  try {
-    // Check cache first if not forcing refresh
-    if (!forceRefresh) {
-      const isValid = await isCacheValid();
-      if (isValid) {
-        const cachedContext = await getCachedContext();
-        if (cachedContext) {
-          console.log('[SmartContext] Using cached context');
-          return cachedContext;
-        }
-      }
-    }
+  const now = new Date();
+  const currentTime = format(now, 'HH:mm');
+  const currentDate = format(now, 'yyyy-MM-dd');
+  const dayOfWeek = format(now, 'EEEE');
+  const timeOfDay = now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening';
 
-    console.log('[SmartContext] Generating new context with:', {
-      tasksCount: tasks.length,
-      analyticsDataPresent: !!analyticsData,
-      weatherDataPresent: !!weatherData,
-    });
+  // Prepare the context data for the LLM
+  const context = {
+    currentTime,
+    currentDate,
+    dayOfWeek,
+    timeOfDay,
+    tasks: tasks.map(task => ({
+      title: task.title,
+      priority: task.priority,
+      category: task.category,
+      startTime: task.startTime,
+      endTime: task.endTime,
+      completed: task.completed,
+    })),
+    analytics: analyticsData,
+    weather: weatherData,
+  };
 
-    const now = new Date();
-    const currentTime = format(now, 'HH:mm');
-    const currentDate = format(now, 'yyyy-MM-dd');
-    const dayOfWeek = format(now, 'EEEE');
-    const timeOfDay = now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening';
+  console.log('[SmartContext] Sending prompt to LLM...');
 
-    // Prepare the context data for the LLM
-    const context = {
-      currentTime,
-      currentDate,
-      dayOfWeek,
-      timeOfDay,
-      tasks: tasks.map(task => ({
-        title: task.title,
-        priority: task.priority,
-        category: task.category,
-        startTime: task.startTime,
-        endTime: task.endTime,
-        completed: task.completed,
-      })),
-      analytics: analyticsData,
-      weather: weatherData,
-    };
-
-    console.log('[SmartContext] Sending prompt to LLM...');
-
-    // Create the prompt for the LLM
-    const prompt = `As an AI task assistant, analyze the following context and generate a smart, personalized summary:
+  // Create the prompt for the LLM
+  const prompt = `As an AI task assistant, analyze the following context and generate a smart, personalized summary:
 
 Current Time: ${context.currentTime}
 Current Date: ${context.currentDate}
@@ -173,45 +255,64 @@ Generate a response in the following JSON format:
   "insight": "one personalized productivity insight based on time, day, and analytics"
 }`;
 
-    // Call the OpenAI API using the SDK
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful AI task assistant that provides smart context for task management.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: "json_object" },
-    });
+  // Call the OpenAI API using the SDK
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a helpful AI task assistant that provides smart context for task management.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 1000,
+    response_format: { type: "json_object" },
+  });
 
-    console.log('[SmartContext] Raw LLM Response:', completion.choices[0].message.content);
+  // Parse and validate the LLM response
+  const llmResponse: LLMResponse = JSON.parse(completion.choices[0].message.content || '{}');
 
-    // Parse and validate the LLM response
-    const llmResponse: LLMResponse = JSON.parse(completion.choices[0].message.content || '{}');
+  // Create the final context with timestamps
+  return {
+    ...llmResponse,
+    timestamp: now.toISOString(),
+    lastUpdated: format(now, 'HH:mm'),
+  };
+};
 
-    // Create the final context with timestamps
-    const smartContext: SmartContext = {
-      ...llmResponse,
-      timestamp: now.toISOString(),
-      lastUpdated: format(now, 'HH:mm'),
-    };
+export const generateSmartContext = async (
+  tasks: Task[],
+  analyticsData: any,
+  weatherData: any,
+  forceRefresh: boolean = false
+): Promise<SmartContext> => {
+  try {
+    // Check cache first if not forcing refresh
+    if (!forceRefresh) {
+      const isValid = await isCacheValid();
+      if (isValid) {
+        const cachedContext = await getCachedContext();
+        if (cachedContext) {
+          console.log('[SmartContext] Using cached context');
+          return cachedContext;
+        }
+      }
+    }
 
-    console.log('[SmartContext] Final Context:', {
-      weatherInfo: smartContext.weather,
-      urgentTasksCount: smartContext.urgentTasks.count,
-      focusState: smartContext.focusStatus.state,
-      energyLevel: smartContext.energyLevel,
-      suggestedActivity: smartContext.suggestedActivity,
-      insight: smartContext.insight,
-      lastUpdated: smartContext.lastUpdated,
-    });
+    let smartContext: SmartContext;
+
+    // Use OpenAI if enabled, otherwise use static generation
+    if (CONFIG.ENABLE_OPENAI) {
+      console.log('[SmartContext] Using OpenAI for context generation');
+      smartContext = await generateOpenAIContext(tasks, analyticsData, weatherData);
+    } else {
+      console.log('[SmartContext] Using static context generation');
+      smartContext = generateStaticSmartContext(tasks, weatherData);
+    }
 
     // Cache the new context
     await cacheContext(smartContext);
@@ -226,20 +327,7 @@ Generate a response in the following JSON format:
       });
     }
     
-    // Return a fallback context if the API call fails
-    const fallbackContext: SmartContext = {
-      weather: { icon: "🌤️", temp: "N/A", condition: "Unable to fetch weather" },
-      urgentTasks: { count: tasks.filter(t => t.priority === 'high' && !t.completed).length, nextDue: "N/A" },
-      focusStatus: { state: "Normal", timeLeft: "N/A" },
-      energyLevel: "medium",
-      suggestedActivity: "Continue with your planned tasks",
-      nextBreak: "In 1 hour",
-      insight: "Unable to generate personalized insight at the moment",
-      timestamp: new Date().toISOString(),
-      lastUpdated: format(new Date(), 'HH:mm'),
-    };
-
-    console.log('[SmartContext] Using fallback context:', fallbackContext);
-    return fallbackContext;
+    // Return static context as fallback
+    return generateStaticSmartContext(tasks, weatherData);
   }
 }; 

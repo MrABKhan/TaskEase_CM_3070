@@ -7,7 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import api from './services/api';
 
-type Category = 'work' | 'health' | 'study' | 'leisure';
+type Category = 'work' | 'health' | 'study' | 'leisure' | 'shopping' | 'family';
 type Priority = 'high' | 'medium' | 'low';
 
 interface SubTask {
@@ -16,7 +16,7 @@ interface SubTask {
   completed: boolean;
 }
 
-const CATEGORIES: Category[] = ['work', 'health', 'study', 'leisure'];
+const CATEGORIES: Category[] = ['work', 'health', 'study', 'leisure', 'shopping', 'family'];
 const PRIORITIES: Priority[] = ['high', 'medium', 'low'];
 
 export default function NewTaskScreen() {
@@ -46,6 +46,10 @@ export default function NewTaskScreen() {
         return '#5856D6';
       case 'leisure':
         return '#FF9F0A';
+      case 'shopping':
+        return '#FF3B30';
+      case 'family':
+        return '#FF2D55';
       default:
         return '#666';
     }
@@ -61,6 +65,10 @@ export default function NewTaskScreen() {
         return 'book-outline';
       case 'leisure':
         return 'gamepad-variant-outline';
+      case 'shopping':
+        return 'cart-outline';
+      case 'family':
+        return 'family-outline';
       default:
         return 'tag-outline';
     }

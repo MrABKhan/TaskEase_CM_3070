@@ -16,7 +16,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  category: 'work' | 'health' | 'study' | 'leisure';
+  category: 'work' | 'health' | 'study' | 'leisure' | 'shopping' | 'family';
   priority: 'high' | 'medium' | 'low';
   startTime: string;
   endTime: string;

@@ -8,7 +8,7 @@ import api from '../services/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const PRIORITIES = ['high', 'medium', 'low'] as const;
-const CATEGORIES = ['work', 'health', 'study', 'leisure'] as const;
+const CATEGORIES = ['work', 'health', 'study', 'leisure', 'shopping', 'family'] as const;
 
 export default function TaskDetailScreen() {
   const router = useRouter();
@@ -237,12 +237,16 @@ export default function TaskDetailScreen() {
     switch (category) {
       case 'work':
         return 'briefcase-outline';
-      case 'personal':
-        return 'account-outline';
-      case 'study':
-        return 'book-outline';
       case 'health':
         return 'heart-outline';
+      case 'study':
+        return 'book-outline';
+      case 'leisure':
+        return 'gamepad-variant-outline';
+      case 'shopping':
+        return 'cart-outline';
+      case 'family':
+        return 'account-group-outline';
       default:
         return 'tag-outline';
     }

@@ -10,6 +10,10 @@ export const getCategoryColor = (category: Task['category']): string => {
       return '#5856D6';
     case 'leisure':
       return '#FF9F0A';
+    case 'shopping':
+      return '#FF375F';
+    case 'family':
+      return '#AC8E68';
     default:
       return '#666';
   }
@@ -25,6 +29,10 @@ export const getCategoryIcon = (category: Task['category']): string => {
       return 'book-outline';
     case 'leisure':
       return 'gamepad-variant-outline';
+    case 'shopping':
+      return 'cart-outline';
+    case 'family':
+      return 'account-group-outline';
     default:
       return 'tag-outline';
   }

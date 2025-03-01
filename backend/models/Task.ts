@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ITask extends Document {
   title: string;
   description: string;
-  category: 'work' | 'health' | 'study' | 'leisure';
+  category: 'work' | 'health' | 'study' | 'leisure' | 'shopping' | 'family';
   priority: 'high' | 'medium' | 'low';
   startTime: string;
   endTime: string;
@@ -27,7 +27,7 @@ const TaskSchema: Schema = new Schema({
   category: { 
     type: String, 
     required: true,
-    enum: ['work', 'health', 'study', 'leisure']
+    enum: ['work', 'health', 'study', 'leisure', 'shopping', 'family']
   },
   priority: {
     type: String,
