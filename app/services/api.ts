@@ -50,116 +50,27 @@ const logAxiosError = (error: AxiosError) => {
 };
 
 const api = {
-  // Get all tasks with filtering
-  getTasks: async (params: any = {}) => {
-    console.log('📤 Fetching tasks with params:', { ...params, userId: TEMP_USER_ID });
-    try {
-      const response = await axios.get(`${API_URL}/tasks`, {
-        params: { ...params, userId: TEMP_USER_ID }
-      });
-      console.log('📥 Raw tasks response:', response.data);
-      const mappedTasks = response.data.tasks.map((task: any) => ({
-        ...task,
-        id: task._id
-      }));
-      console.log('🔄 Mapped tasks:', mappedTasks);
-      return mappedTasks;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        logAxiosError(error);
-      } else {
-        console.error('❌ Unexpected error:', error);
-      }
-      throw error;
-    }
-  },
-
-  // Get today's tasks
-  getTodayTasks: async () => {
-    console.log('📤 Fetching today\'s tasks for user:', TEMP_USER_ID);
-    try {
-      const response = await axios.get(`${API_URL}/tasks/today`, {
-        params: { userId: TEMP_USER_ID }
-      });
-      console.log('📥 Raw today\'s tasks response:', response.data);
-      const mappedTasks = response.data.map((task: any) => ({
-        ...task,
-        id: task._id
-      }));
-      console.log('🔄 Mapped today\'s tasks:', mappedTasks);
-      return mappedTasks;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        logAxiosError(error);
-      } else {
-        console.error('❌ Unexpected error:', error);
-      }
-      throw error;
-    }
-  },
-
-  updateTask: async (id: string, updates: Partial<Task>) => {
-    console.log('📤 Updating task:', { id, updates });
-    try {
-      const response = await axios.put(`${API_URL}/tasks/${id}`, updates);
-      console.log('📥 Update task response:', response.data);
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        logAxiosError(error);
-      } else {
-        console.error('❌ Unexpected error:', error);
-      }
-      throw error;
-    }
-  },
-
-  deleteTask: async (id: string) => {
-    console.log('📤 Deleting task:', id);
-    try {
-      await axios.delete(`${API_URL}/tasks/${id}`);
-      console.log('✅ Task deleted successfully');
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        logAxiosError(error);
-      } else {
-        console.error('❌ Unexpected error:', error);
-      }
-      throw error;
-    }
-  },
-
-  createTask: async (taskData: Partial<Task>) => {
-    console.log('📤 Creating new task:', taskData);
-    try {
-      const response = await axios.post(`${API_URL}/tasks`, {
-        ...taskData,
-        userId: TEMP_USER_ID,
-        notes: [],
-        tags: [],
-      });
-      console.log('📥 Create task response:', response.data);
-      return {
-        ...response.data,
-        id: response.data._id
-      };
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        logAxiosError(error);
-      } else {
-        console.error('❌ Unexpected error:', error);
-      }
-      throw error;
-    }
-  },
-
-  // Get tasks for a specific month or date
+  // Get tasks with filtering
   getTasks: async (params: { month?: string; date?: string } = {}) => {
     console.log('📤 Fetching tasks with params:', { ...params, userId: TEMP_USER_ID });
     try {
-      const response = await axios.get(`${API_URL}/tasks`, {
-        params: { ...params, userId: TEMP_USER_ID }
-      });
+      let response;
+      if (params.month) {
+        // Extract year and month from the month string (format: YYYY-MM)
+        const [year, month] = params.month.split('-');
+        response = await axios.get(`${API_URL}/tasks/month/${year}/${month}`, {
+          params: { userId: TEMP_USER_ID }
+        });
+      } else if (params.date) {
+        response = await axios.get(`${API_URL}/tasks/date/${params.date}`, {
+          params: { userId: TEMP_USER_ID }
+        });
+      } else {
+        response = await axios.get(`${API_URL}/tasks`, {
+          params: { ...params, userId: TEMP_USER_ID }
+        });
+      }
+
       // Handle both array and object responses
       const tasksData = response.data.tasks || response.data || [];
       console.log('📥 Raw tasks response:', tasksData);
@@ -220,6 +131,61 @@ const api = {
       
       console.log('🔄 Mapped today\'s tasks:', mappedTasks);
       return mappedTasks;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        console.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  updateTask: async (id: string, updates: Partial<Task>) => {
+    console.log('📤 Updating task:', { id, updates });
+    try {
+      const response = await axios.put(`${API_URL}/tasks/${id}`, updates);
+      console.log('📥 Update task response:', response.data);
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        console.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  deleteTask: async (id: string) => {
+    console.log('📤 Deleting task:', id);
+    try {
+      await axios.delete(`${API_URL}/tasks/${id}`);
+      console.log('✅ Task deleted successfully');
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        console.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  createTask: async (taskData: Partial<Task>) => {
+    console.log('📤 Creating new task:', taskData);
+    try {
+      const response = await axios.post(`${API_URL}/tasks`, {
+        ...taskData,
+        userId: TEMP_USER_ID,
+        notes: [],
+        tags: [],
+      });
+      console.log('📥 Create task response:', response.data);
+      return {
+        ...response.data,
+        id: response.data._id
+      };
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);
