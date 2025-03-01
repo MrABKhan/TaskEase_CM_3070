@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import taskRoutes from './routes/tasks';
 import Task from './models/Task';
-import { seedTasks } from './data/seedTasks';
+import { generateYearOfTasks } from './utils/taskGenerator';
 
 dotenv.config();
 
@@ -29,10 +29,11 @@ const seedDatabase = async () => {
     // Clear existing tasks
     await Task.deleteMany({});
     
-    // Insert seed tasks
-    await Task.insertMany(seedTasks);
+    // Generate and insert a year of tasks
+    const yearOfTasks = generateYearOfTasks();
+    await Task.insertMany(yearOfTasks);
     
-    console.log('Database seeded successfully');
+    console.log(`Database seeded successfully with ${yearOfTasks.length} tasks`);
   } catch (error) {
     console.error('Error seeding database:', error);
   }
