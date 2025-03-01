@@ -6,6 +6,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { generateSmartContext } from '../services/smartContext';
+import TaskList from '../components/TaskList';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
 type Priority = 'high' | 'medium' | 'low';
@@ -132,6 +133,33 @@ export default function TabOneScreen() {
       console.log('[SmartContext] Task update successful');
     } catch (error) {
       console.error('[SmartContext] Error updating task:', error);
+    } finally {
+      setContextLoading(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      console.log('[SmartContext] Deleting task:', { taskId });
+      
+      await api.deleteTask(taskId);
+      // Update local state
+      const updatedTasks = tasks.filter(t => t.id !== taskId);
+      setTasks(updatedTasks);
+
+      // Regenerate smart context with updated tasks
+      setContextLoading(true);
+      const smartContext = await generateSmartContext(
+        updatedTasks,
+        analyticsData,
+        contextData.weather,
+        true // Force refresh
+      );
+      setContextData(smartContext);
+
+      console.log('[SmartContext] Task deletion successful');
+    } catch (error) {
+      console.error('[SmartContext] Error deleting task:', error);
     } finally {
       setContextLoading(false);
     }
@@ -348,86 +376,11 @@ export default function TabOneScreen() {
             </View>
             {tasks.length > 0 ? (
               <>
-                <List.Section>
-                  {tasks.map((task) => (
-                    <View key={task.id} style={styles.taskItemContainer}>
-                      <Pressable
-                        style={styles.checkboxContainer}
-                        onPress={() => {
-                          handleTaskComplete(task.id, !task.completed);
-                        }}
-                      >
-                        <List.Icon 
-                          icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
-                          color={task.completed ? "#30D158" : "#666"}
-                        />
-                      </Pressable>
-                      <Link 
-                        href={`/task-detail/${task.id}`} 
-                        asChild 
-                        style={styles.taskContent}
-                      >
-                        <Pressable>
-                          <List.Item
-                            title={task.title}
-                            titleStyle={[
-                              styles.taskTitle,
-                              task.completed && styles.taskTitleCompleted
-                            ]}
-                            description={() => (
-                              <View style={[
-                                styles.taskMeta,
-                                task.completed && styles.taskMetaCompleted
-                              ]}>
-                                <View style={styles.tagContainer}>
-                                  <View style={[styles.tag, { backgroundColor: `${getCategoryColor(task.category)}15` }]}>
-                                    <MaterialCommunityIcons 
-                                      name={getCategoryIcon(task.category)} 
-                                      size={14} 
-                                      color={task.completed ? '#999' : getCategoryColor(task.category)} 
-                                      style={styles.tagIcon}
-                                    />
-                                    <Text style={[
-                                      styles.tagText, 
-                                      { color: task.completed ? '#999' : getCategoryColor(task.category) }
-                                    ]}>
-                                      {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
-                                    </Text>
-                                  </View>
-                                  <View style={[
-                                    styles.tag, 
-                                    { backgroundColor: task.completed ? '#f0f0f0' : `${getPriorityColor(task.priority)}15` }
-                                  ]}>
-                                    <Text style={[
-                                      styles.tagText,
-                                      { color: task.completed ? '#999' : getPriorityColor(task.priority) }
-                                    ]}>
-                                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                    </Text>
-                                  </View>
-                                </View>
-                                <View style={styles.timeContainer}>
-                                  <MaterialCommunityIcons 
-                                    name="clock-outline" 
-                                    size={14} 
-                                    color={task.completed ? '#999' : '#666'} 
-                                  />
-                                  <Text style={[
-                                    styles.timeText,
-                                    task.completed && styles.timeTextCompleted
-                                  ]}>
-                                    {task.startTime} - {task.endTime}
-                                  </Text>
-                                </View>
-                              </View>
-                            )}
-                            style={styles.taskItem}
-                          />
-                        </Pressable>
-                      </Link>
-                    </View>
-                  ))}
-                </List.Section>
+                <TaskList
+                  tasks={tasks}
+                  onTaskComplete={handleTaskComplete}
+                  onTaskDelete={handleDeleteTask}
+                />
                 <Link href="/calendar" asChild>
                   <Pressable>
                     {({ pressed }) => (

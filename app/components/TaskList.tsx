@@ -132,13 +132,9 @@ export default function TaskList({ tasks, onTaskComplete, onTaskDelete }: Props)
           </Link>
           <IconButton
             icon="trash-can-outline"
-            iconColor={task.completed ? '#CCCCCC' : '#666666'}
             size={20}
             onPress={() => onTaskDelete(task.id)}
-            style={[
-              styles.deleteButton,
-              task.completed && { opacity: 0.5 }
-            ]}
+            style={styles.deleteButton}
           />
         </View>
       ))}

@@ -5,7 +5,7 @@
 ### 1. Smart Task Input ⏳ Partially Implemented
 - [x] Basic task creation interface
 - [ ] Natural language processing
-- [ ] Voice input support
+- [x] Voice input support
 - [ ] Quick-add shortcuts
 - [ ] Template-based input
 

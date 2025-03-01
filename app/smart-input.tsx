@@ -1,19 +1,63 @@
 import { View, StyleSheet } from 'react-native';
 import { Text, Surface, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import * as SpeechRecognition from 'expo-speech-recognition';
 
 export default function SmartInputScreen() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [hasPermission, setHasPermission] = useState(false);
 
-  const handleVoiceInput = () => {
-    setIsListening(true);
-    // TODO: Implement voice recognition
-    setTimeout(() => {
-      setTranscript("I'll help you create a task. What would you like to add?");
+  useEffect(() => {
+    (async () => {
+      try {
+        const { granted } = await SpeechRecognition.requestPermissionsAsync();
+        setHasPermission(granted);
+        if (!granted) {
+          setTranscript('Please grant microphone permission to use voice input.');
+        }
+      } catch (err) {
+        console.error('Failed to get permission:', err);
+        setTranscript('Error requesting microphone permission.');
+      }
+    })();
+  }, []);
+
+  const handleVoiceInput = async () => {
+    try {
+      if (!hasPermission) {
+        setTranscript('Please grant microphone permission to use voice input.');
+        return;
+      }
+
+      if (isListening) {
+        await SpeechRecognition.stopListeningAsync();
+        setIsListening(false);
+        return;
+      }
+
+      setIsListening(true);
+      setTranscript('');
+
+      await SpeechRecognition.startListeningAsync({
+        partialResults: true,
+        onResult: (result) => {
+          if (result.value && result.value.length > 0) {
+            setTranscript(result.value[0]);
+          }
+        },
+        onError: (error) => {
+          console.error('Speech recognition error:', error);
+          setTranscript('Sorry, I didn\'t catch that. Please try again.');
+          setIsListening(false);
+        },
+      });
+    } catch (err) {
+      console.error('Voice input error:', err);
+      setTranscript('An error occurred. Please try again.');
       setIsListening(false);
-    }, 1000);
+    }
   };
 
   return (
