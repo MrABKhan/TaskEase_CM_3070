@@ -144,6 +144,70 @@ For support, please open an issue in the GitHub repository or contact the develo
 
 ## Deployment
 
+### Internal Preview Deployment (Expo)
+
+To share a preview version of the app with your team for testing:
+
+1. Install EAS CLI if you haven't already:
+   ```bash
+   npm install -g eas-cli
+   ```
+
+2. Login to your Expo account:
+   ```bash
+   eas login
+   ```
+
+3. Configure your project for EAS Build (if not already done):
+   ```bash
+   eas build:configure
+   ```
+
+4. The project includes an `eas.json` file with the following build profiles:
+
+   - **Development**: Includes development client features for debugging
+   - **Preview**: For internal team testing via TestFlight and APK downloads
+   - **Production**: For app store submissions
+
+5. To build for different purposes:
+
+   - **For Internal Team Testing** (preview builds):
+     ```bash
+     eas build --profile preview --platform all
+     ```
+
+   - **For Development Builds** (with development client features):
+     ```bash
+     eas build --profile development --platform all
+     ```
+
+   - **For Production Builds** (when ready for app stores):
+     ```bash
+     eas build --profile production --platform all
+     ```
+
+6. Once the builds are complete, you can share them with your team:
+   - For iOS: EAS will generate a link that you can share with your team members (they'll need to have the Apple TestFlight app installed)
+   - For Android: EAS will provide a direct download link for the APK
+
+7. Your team members can install the app by:
+   - iOS: Opening the TestFlight invitation and installing the app
+   - Android: Downloading and installing the APK directly
+
+8. For subsequent updates, you can create new builds with the same command:
+   ```bash
+   eas build --profile preview --platform all
+   ```
+
+9. Before building, make sure to update the API URLs in `eas.json` to point to your deployed backend:
+   ```json
+   "env": {
+     "API_URL": "https://your-actual-api-url.com"
+   }
+   ```
+
+Note: Make sure your team members have an Expo account and are added to your project as collaborators if you're using the free tier of Expo.
+
 ### Frontend Deployment (Expo)
 
 The frontend can be deployed using Expo Application Services (EAS):

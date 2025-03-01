@@ -12,8 +12,10 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "TaskEase needs your location to provide weather updates and location-based task suggestions.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "TaskEase needs your location to provide weather updates and location-based task suggestions."
-      }
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TaskEase needs your location to provide weather updates and location-based task suggestions.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.bakarkhan.TaskEase"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,8 +24,11 @@
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+        "ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.bakarkhan.TaskEase"
     },
     "web": {
       "bundler": "metro",
@@ -51,6 +56,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "1186facd-c721-4645-ae2c-e0de94aefcdb"
+      }
     }
   }
 }
