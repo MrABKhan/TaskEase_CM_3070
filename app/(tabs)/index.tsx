@@ -25,6 +25,7 @@ interface SmartContext {
     icon: string;
     temp: string;
     condition: string;
+    location?: string;
   };
   urgentTasks: {
     count: number;
@@ -253,27 +254,31 @@ export default function TabOneScreen() {
         <Surface style={styles.surface} elevation={0}>
           {/* Status Bar */}
           <View style={styles.statusBar}>
-            <View style={styles.statusItem}>
-              <Text style={styles.statusIcon}>{contextData.weather.icon}</Text>
-              <View>
-                <Text style={styles.statusValue}>{contextData.weather.temp}</Text>
-                <Text style={styles.statusLabel}>{contextData.weather.condition}</Text>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusItem, styles.weatherItem]}>
+                <Text style={styles.statusIcon}>{contextData.weather.icon}</Text>
+                <View>
+                  <Text style={styles.statusValue}>{contextData.weather.condition}</Text>
+                  {contextData.weather.location ? (
+                    <>
+                      <Text style={styles.statusLabel} numberOfLines={1}>
+                        {contextData.weather.location.split(',')[0].trim()}
+                      </Text>
+                      <Text style={styles.statusLabel} numberOfLines={1}>
+                        {contextData.weather.location.split(',')[1]?.trim() || ''}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.statusLabel}>Updating location...</Text>
+                  )}
+                </View>
               </View>
-            </View>
-            <View style={styles.statusDivider} />
-            <View style={styles.statusItem}>
-              <Text style={styles.statusIcon}>🔥</Text>
-              <View>
-                <Text style={styles.statusValue}>{contextData.urgentTasks.count} urgent</Text>
-                <Text style={styles.statusLabel}>Next: {contextData.urgentTasks.nextDue}</Text>
-              </View>
-            </View>
-            <View style={styles.statusDivider} />
-            <View style={styles.statusItem}>
-              <Text style={styles.statusIcon}>⚡</Text>
-              <View>
-                <Text style={styles.statusValue}>{contextData.focusStatus.state}</Text>
-                <Text style={styles.statusLabel}>{contextData.focusStatus.timeLeft} left</Text>
+              <View style={[styles.statusItem, styles.urgentItem]}>
+                <Text style={styles.statusIcon}>🔥</Text>
+                <View>
+                  <Text style={styles.statusValue}>{contextData.urgentTasks.count} urgent</Text>
+                  <Text style={styles.statusLabel}>Next: {contextData.urgentTasks.nextDue}</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -689,33 +694,44 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statusBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     padding: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    gap: 12,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
   },
   statusItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
+    flex: 1,
+  },
+  weatherItem: {
+    maxWidth: '60%',
+    paddingRight: 8,
+  },
+  urgentItem: {
+    maxWidth: '40%',
   },
   statusIcon: {
     fontSize: 20,
+    minWidth: 24,
+    textAlign: 'center',
   },
   statusValue: {
     fontSize: 14,
     fontWeight: '600',
+    flexShrink: 1,
   },
   statusLabel: {
     fontSize: 12,
     color: '#666',
-  },
-  statusDivider: {
-    width: 1,
-    backgroundColor: '#f0f0f0',
-    height: '100%',
+    flexShrink: 1,
   },
   contextContainer: {
     marginBottom: 24,

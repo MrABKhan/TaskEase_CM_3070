@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { Task } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format, isWeekend, isBefore, addHours } from 'date-fns';
+import { getCurrentLocation, LocationData } from './locationService';
 
 // Configuration
 const CONFIG = {
@@ -19,6 +20,7 @@ export interface SmartContext {
     icon: string;
     temp: string;
     condition: string;
+    location?: string;
   };
   urgentTasks: {
     count: number;
@@ -34,6 +36,7 @@ export interface SmartContext {
   insight: string;
   timestamp: string;
   lastUpdated: string;
+  location?: LocationData;
 }
 
 interface LLMResponse {
@@ -92,80 +95,197 @@ const cacheContext = async (context: SmartContext): Promise<void> => {
   }
 };
 
+const parseTimeString = (timeStr: string): string => {
+  // If already in 24-hour format
+  if (/^\d{2}:\d{2}$/.test(timeStr)) {
+    return timeStr;
+  }
+  
+  // Handle "HH:mm AM/PM" format
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match) {
+    let [_, hours, minutes, period] = match;
+    let hour = parseInt(hours);
+    
+    // Convert to 24-hour format
+    if (period.toLowerCase() === 'pm' && hour < 12) hour += 12;
+    if (period.toLowerCase() === 'am' && hour === 12) hour = 0;
+    
+    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+  }
+  
+  // Return a default value if the format is not recognized
+  console.warn(`[SmartContext] Invalid time format: ${timeStr}`);
+  return '00:00';
+};
+
+const safeParseDate = (date: string | Date, time: string): Date => {
+  try {
+    let dateObj: Date;
+    
+    // Handle the date part
+    if (date instanceof Date) {
+      dateObj = date;
+    } else if (date.includes('T')) {
+      // If it's an ISO string, parse it and reset the time
+      dateObj = new Date(date);
+      dateObj.setHours(0, 0, 0, 0);
+    } else {
+      // If it's just a date string
+      dateObj = new Date(date);
+    }
+
+    // Validate the date
+    if (isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date');
+    }
+
+    // Parse and add the time
+    const [hours, minutes] = parseTimeString(time).split(':').map(Number);
+    dateObj.setHours(hours, minutes, 0, 0);
+
+    return dateObj;
+  } catch (error) {
+    console.warn(`[SmartContext] Error parsing date/time: ${date} ${time}`, error);
+    return new Date(); // Return current date as fallback
+  }
+};
+
+// Helper function to format time consistently
+const formatTime = (date: Date): string => {
+  try {
+    return format(date, 'HH:mm');
+  } catch (error) {
+    console.warn('[SmartContext] Error formatting time:', error);
+    return 'N/A';
+  }
+};
+
 // Function to generate static smart context based on tasks
-const generateStaticSmartContext = (
+const generateStaticSmartContext = async (
   tasks: Task[],
   weatherData: any
-): SmartContext => {
+): Promise<SmartContext> => {
   const now = new Date();
   const currentHour = now.getHours();
   
-  // Filter urgent and incomplete tasks
-  const urgentTasks = tasks.filter(t => 
-    t.priority === 'high' && 
-    !t.completed && 
-    isBefore(new Date(`${t.date}T${t.startTime}`), addHours(now, 24))
-  );
+  // Get location data
+  const locationData = await getCurrentLocation();
+  
+  // Filter urgent and incomplete tasks - consider both high priority and timing
+  const urgentTasks = tasks.filter(t => {
+    if (t.completed) return false;
+    
+    try {
+      // Check if task is high priority or if it's due within 24 hours
+      const taskDateTime = safeParseDate(t.date, t.startTime);
+      const isUrgentByTime = isBefore(taskDateTime, addHours(now, 24));
+      return t.priority === 'high' || isUrgentByTime;
+    } catch (error) {
+      console.warn(`[SmartContext] Error processing task: ${t.title}`);
+      return false;
+    }
+  });
 
-  // Determine energy level based on time of day
+  // Sort urgent tasks by start time
+  urgentTasks.sort((a, b) => {
+    try {
+      const aDate = safeParseDate(a.date, a.startTime);
+      const bDate = safeParseDate(b.date, b.startTime);
+      return aDate.getTime() - bDate.getTime();
+    } catch (error) {
+      return 0;
+    }
+  });
+
+  // Determine energy level based on time of day and any provided analytics
   let energyLevel = 'medium';
   if (currentHour >= 9 && currentHour <= 11) energyLevel = 'high';
   else if (currentHour >= 14 && currentHour <= 16) energyLevel = 'medium';
   else if (currentHour >= 21 || currentHour <= 6) energyLevel = 'low';
 
-  // Determine focus state based on time
+  // Determine focus state based on time and tasks
   let focusState = 'Normal';
   if (currentHour >= 9 && currentHour <= 12) focusState = 'Peak Focus Time';
   else if (currentHour >= 14 && currentHour <= 17) focusState = 'Productive';
   else if (currentHour >= 22 || currentHour <= 6) focusState = 'Rest';
 
-  // Get next task start time
+  // Get next task start time for any incomplete task
   const upcomingTasks = tasks
-    .filter(t => !t.completed && isBefore(now, new Date(`${t.date}T${t.startTime}`)))
-    .sort((a, b) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime());
+    .filter(t => {
+      if (t.completed) return false;
+      try {
+        const taskDate = safeParseDate(t.date, t.startTime);
+        return isBefore(now, taskDate);
+      } catch (error) {
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        const aDate = safeParseDate(a.date, a.startTime);
+        const bDate = safeParseDate(b.date, b.startTime);
+        return aDate.getTime() - bDate.getTime();
+      } catch (error) {
+        return 0;
+      }
+    });
 
-  // Generate suggested activity based on time and day
+  // Generate suggested activity based on time, day, and task priority
   let suggestedActivity = 'Focus on high-priority tasks';
   if (isWeekend(now)) {
-    suggestedActivity = currentHour < 12 ? 'Plan your weekend activities' : 'Enjoy some leisure time';
+    if (urgentTasks.length > 0) {
+      suggestedActivity = 'Handle urgent tasks first, then enjoy your weekend';
+    } else {
+      suggestedActivity = currentHour < 12 ? 'Plan your weekend activities' : 'Enjoy some leisure time';
+    }
   } else if (currentHour < 12) {
     suggestedActivity = 'Handle important tasks while energy is high';
   } else if (currentHour >= 14 && currentHour <= 17) {
     suggestedActivity = 'Work on creative or collaborative tasks';
   }
 
-  // Generate insight based on task patterns
+  // Generate insight based on task patterns and completion
   let insight = 'Keep up with your regular schedule';
   const completedTasks = tasks.filter(t => t.completed);
   if (completedTasks.length > 0) {
     const categories = completedTasks.map(t => t.category);
-    const mostCommonCategory = categories.sort((a, b) =>
-      categories.filter(v => v === a).length - categories.filter(v => v === b).length
-    ).pop();
+    const categoryCount = categories.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const mostCommonCategory = Object.entries(categoryCount)
+      .sort(([,a], [,b]) => b - a)[0][0];
+    
     insight = `You're most productive with ${mostCommonCategory} tasks`;
   }
 
-  // Use provided weather data or fallback
-  const weather = weatherData ? {
-    icon: getWeatherIcon(weatherData.condition),
-    temp: `${weatherData.temperature}°`,
-    condition: weatherData.condition
-  } : {
-    icon: "🌤️",
-    temp: "N/A",
-    condition: "Weather data unavailable"
+  // Use provided weather data with proper fallbacks and location
+  const weather = {
+    icon: weatherData?.condition ? getWeatherIcon(weatherData.condition) : "🌤️",
+    temp: weatherData?.temperature ? `${Math.round(weatherData.temperature)}°` : "N/A",
+    condition: weatherData?.condition || "Weather data unavailable",
+    location: locationData ? 
+      [locationData.city, locationData.country]
+        .filter(Boolean)
+        .join(', ') || 
+      `${locationData.latitude.toFixed(2)}, ${locationData.longitude.toFixed(2)}` : 
+      undefined
   };
 
   return {
     weather,
     urgentTasks: {
       count: urgentTasks.length,
-      nextDue: urgentTasks[0] ? format(new Date(`${urgentTasks[0].date}T${urgentTasks[0].startTime}`), 'HH:mm') : 'None'
+      nextDue: urgentTasks.length > 0 
+        ? formatTime(safeParseDate(urgentTasks[0].date, urgentTasks[0].startTime))
+        : 'None'
     },
     focusStatus: {
       state: focusState,
-      timeLeft: upcomingTasks[0] 
-        ? `Until ${format(new Date(`${upcomingTasks[0].date}T${upcomingTasks[0].startTime}`), 'HH:mm')}`
+      timeLeft: upcomingTasks.length > 0
+        ? `Until ${formatTime(safeParseDate(upcomingTasks[0].date, upcomingTasks[0].startTime))}`
         : 'No upcoming tasks'
     },
     energyLevel,
@@ -173,7 +293,8 @@ const generateStaticSmartContext = (
     nextBreak: currentHour % 2 === 0 ? 'In 30 minutes' : 'In 1 hour',
     insight,
     timestamp: now.toISOString(),
-    lastUpdated: format(now, 'HH:mm')
+    lastUpdated: format(now, 'HH:mm'),
+    ...(locationData && { location: locationData })
   };
 };
 
@@ -311,7 +432,7 @@ export const generateSmartContext = async (
       smartContext = await generateOpenAIContext(tasks, analyticsData, weatherData);
     } else {
       console.log('[SmartContext] Using static context generation');
-      smartContext = generateStaticSmartContext(tasks, weatherData);
+      smartContext = await generateStaticSmartContext(tasks, weatherData);
     }
 
     // Cache the new context
