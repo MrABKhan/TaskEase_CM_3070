@@ -74,11 +74,22 @@ export default function TaskList({ tasks, onTaskComplete, onTaskDelete }: Props)
           >
             <Pressable>
               <List.Item
-                title={task.title}
-                titleStyle={[
-                  styles.taskTitle,
-                  task.completed && styles.taskTitleCompleted
-                ]}
+                title={() => (
+                  <View style={styles.titleContainer}>
+                    <Text style={[
+                      styles.taskTitle,
+                      task.completed && styles.taskTitleCompleted
+                    ]}>
+                      {task.title}
+                    </Text>
+                    {task.isAiGenerated && (
+                      <View style={styles.aiIndicator}>
+                        <MaterialCommunityIcons name="robot" size={14} color="#007AFF" />
+                        <Text style={styles.aiIndicatorText}>AI</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
                 description={() => (
                   <View style={[
                     styles.taskMeta,
@@ -209,5 +220,25 @@ const styles = StyleSheet.create({
   deleteButton: {
     margin: 0,
     padding: 0,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  aiIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  aiIndicatorText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginLeft: 2,
   },
 }); 

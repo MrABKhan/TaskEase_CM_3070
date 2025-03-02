@@ -40,6 +40,7 @@ export interface Task {
     completed: boolean;
   }[];
   tags: string[];
+  isAiGenerated?: boolean;
 }
 
 const logAxiosError = (error: AxiosError) => {
@@ -191,6 +192,7 @@ const api = {
         userId: TEMP_USER_ID,
         notes: [],
         tags: [],
+        isAiGenerated: taskData.isAiGenerated || false,
       });
       logger.debug('📥 Create task response:', response.data);
       return {

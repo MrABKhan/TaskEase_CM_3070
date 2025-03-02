@@ -1,11 +1,15 @@
-import { View, StyleSheet, Animated, Easing, ScrollView, SafeAreaView } from 'react-native';
-import { Text, Surface, IconButton, useTheme } from 'react-native-paper';
+import { View, StyleSheet, Animated, Easing, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Text, Surface, IconButton, useTheme, Snackbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
+import { router } from 'expo-router';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
+import { parseTaskFromText, createTemplateTask } from '../services/taskParsingService';
+import api from '../services/api';
 
 export default function SmartInputScreen() {
   const theme = useTheme();
@@ -18,6 +22,9 @@ export default function SmartInputScreen() {
     expires?: string | number;
   }>({});
   const [silentTime, setSilentTime] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Add timeout handling
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -189,6 +196,11 @@ export default function SmartInputScreen() {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
+    
+    // Process the transcript if it contains actual speech
+    if (transcript && transcript !== "I'm listening..." && !transcript.includes("No speech detected") && lastSpeechRef.current) {
+      processTranscript(transcript);
+    }
   });
 
   useSpeechRecognitionEvent("result", (event) => {
@@ -323,6 +335,98 @@ export default function SmartInputScreen() {
     }
   };
 
+  // Process the transcript to create a task
+  const processTranscript = async (text: string) => {
+    if (!text || text === "I'm listening..." || text.includes("No speech detected")) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Parse the transcript into task data
+      const taskData = await parseTaskFromText(text);
+      
+      if (taskData.error) {
+        console.warn('[SmartInput] Error parsing task:', taskData.error);
+        showSnackbar(`Couldn't fully understand that. Creating a basic task.`);
+      }
+      
+      // Create the task
+      const newTask = await createTask(taskData);
+      
+      // Show success message
+      showSnackbar('Task created successfully!');
+      
+      // Clear the transcript
+      setTranscript('');
+      
+      // Navigate to the task detail screen after a short delay
+      setTimeout(() => {
+        router.push(`/task-detail/${newTask.id}`);
+      }, 1500);
+    } catch (error) {
+      console.error('[SmartInput] Error processing transcript:', error);
+      showSnackbar('Failed to create task. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Create a task using the API
+  const createTask = async (taskData: any) => {
+    try {
+      const newTask = await api.createTask({
+        title: taskData.title,
+        description: taskData.description,
+        category: taskData.category,
+        priority: taskData.priority,
+        date: taskData.date,
+        startTime: taskData.startTime,
+        endTime: taskData.endTime,
+        completed: false,
+        subtasks: [],
+        isAiGenerated: taskData.isAiGenerated || false,
+      });
+      
+      console.log('[SmartInput] Task created:', newTask);
+      return newTask;
+    } catch (error) {
+      console.error('[SmartInput] Error creating task:', error);
+      throw error;
+    }
+  };
+
+  // Handle template-based task creation
+  const handleTemplateTask = async (template: string) => {
+    setIsProcessing(true);
+    try {
+      // Get task data from template
+      const taskData = createTemplateTask(template);
+      
+      // Create the task
+      const newTask = await createTask(taskData);
+      
+      // Show success message
+      showSnackbar('Task created from template!');
+      
+      // Navigate to the task detail screen after a short delay
+      setTimeout(() => {
+        router.push(`/task-detail/${newTask.id}`);
+      }, 1500);
+    } catch (error) {
+      console.error('[SmartInput] Error creating template task:', error);
+      showSnackbar('Failed to create task from template.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Show a snackbar message
+  const showSnackbar = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
+  };
+
   const getStatusColor = () => {
     if (!recognizing) return theme.colors.primary;
     if (lastSpeechRef.current) return '#4CD964'; // Green when actively speaking
@@ -395,13 +499,17 @@ export default function SmartInputScreen() {
                   }
                 ]}
               >
-                <IconButton
-                  icon={recognizing ? "stop" : "microphone"}
-                  size={36}
-                  iconColor="#fff"
-                  onPress={handleVoiceInput}
-                  style={styles.micButton}
-                />
+                {isProcessing ? (
+                  <ActivityIndicator size={36} color="#fff" style={styles.micButton} />
+                ) : (
+                  <IconButton
+                    icon={recognizing ? "stop" : "microphone"}
+                    size={36}
+                    iconColor="#fff"
+                    onPress={handleVoiceInput}
+                    style={styles.micButton}
+                  />
+                )}
               </Animated.View>
             </View>
 
@@ -426,28 +534,73 @@ export default function SmartInputScreen() {
                 color={lastSpeechRef.current ? "#4CD964" : "#666"} 
               />
               <Text style={styles.transcriptText}>{transcript}</Text>
+              
+              {/* Create task button - only show if we have actual speech */}
+              {!recognizing && lastSpeechRef.current && transcript && !transcript.includes("No speech detected") && (
+                <TouchableOpacity 
+                  style={styles.createTaskButton}
+                  onPress={() => processTranscript(transcript)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator size={20} color="#fff" />
+                  ) : (
+                    <React.Fragment>
+                      <MaterialCommunityIcons name="plus" size={16} color="#fff" />
+                      <Text style={styles.createTaskButtonText}>Create Task</Text>
+                    </React.Fragment>
+                  )}
+                </TouchableOpacity>
+              )}
             </Animated.View>
           )}
 
           <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsTitle}>Try saying:</Text>
+            <Text style={styles.suggestionsTitle}>Try saying or tap to create:</Text>
             <View style={styles.suggestions}>
-              <View style={styles.suggestionItem}>
+              <TouchableOpacity 
+                style={[styles.suggestionItem, styles.suggestionItemTouchable]}
+                onPress={() => handleTemplateTask('work-meeting')}
+                disabled={isProcessing}
+              >
                 <MaterialCommunityIcons name="calendar-clock" size={20} color={theme.colors.primary} />
                 <Text style={styles.suggestion}>"Add a work meeting tomorrow at 2 PM"</Text>
-              </View>
-              <View style={styles.suggestionItem}>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.suggestionItem, styles.suggestionItemTouchable]}
+                onPress={() => handleTemplateTask('gym')}
+                disabled={isProcessing}
+              >
                 <MaterialCommunityIcons name="dumbbell" size={20} color="#FF9500" />
                 <Text style={styles.suggestion}>"Remind me to go to the gym at 6 PM"</Text>
-              </View>
-              <View style={styles.suggestionItem}>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.suggestionItem, styles.suggestionItemTouchable]}
+                onPress={() => handleTemplateTask('high-priority')}
+                disabled={isProcessing}
+              >
                 <MaterialCommunityIcons name="flag-variant" size={20} color="#FF3B30" />
                 <Text style={styles.suggestion}>"Schedule a high priority task for today"</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </Surface>
       </ScrollView>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+        action={{
+          label: 'OK',
+          onPress: () => setSnackbarVisible(false),
+        }}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -558,6 +711,21 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: '#333',
   },
+  createTaskButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginLeft: 8,
+  },
+  createTaskButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
   suggestionsContainer: {
     backgroundColor: '#f8f8f8',
     padding: 16,
@@ -576,10 +744,16 @@ const styles = StyleSheet.create({
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+  },
+  suggestionItemTouchable: {
+    backgroundColor: 'rgba(0,0,0,0.03)',
   },
   suggestion: {
     fontSize: 15,
     color: '#333',
     marginLeft: 12,
+    flex: 1,
   },
 });

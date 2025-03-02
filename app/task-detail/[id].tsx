@@ -301,6 +301,14 @@ export default function TaskDetailScreen() {
                 theme={{ colors: { primary: '#000' } }}
                 multiline
               />
+              
+              {/* AI Generated Indicator */}
+              {task.isAiGenerated && (
+                <View style={styles.aiIndicator}>
+                  <MaterialCommunityIcons name="robot" size={16} color="#007AFF" />
+                  <Text style={styles.aiIndicatorText}>AI Generated</Text>
+                </View>
+              )}
             </View>
             <IconButton
               icon={task.completed ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
@@ -585,6 +593,7 @@ const styles = StyleSheet.create({
   },
   titleWrapper: {
     flex: 1,
+    marginRight: 8,
   },
   titleInput: {
     fontSize: 24,
@@ -700,6 +709,22 @@ const styles = StyleSheet.create({
   },
   addSubtaskItem: {
     opacity: 0.6,
+  },
+  aiIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  aiIndicatorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginLeft: 4,
   },
 });
 
