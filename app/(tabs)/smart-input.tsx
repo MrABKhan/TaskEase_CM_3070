@@ -16,6 +16,53 @@ export default function SmartInputScreen() {
     canAskAgain?: boolean;
     expires?: string | number;
   }>({});
+  const [silentTime, setSilentTime] = useState(0);
+
+  // Add timeout handling
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSpeechRef = useRef<boolean>(false);
+  const MAX_SILENT_TIME = 5; // Maximum seconds of silence
+
+  const resetTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // If we already have speech, stop after short silence
+    if (lastSpeechRef.current && transcript.trim() !== '') {
+      timeoutRef.current = setTimeout(() => {
+        if (recognizing) {
+          ExpoSpeechRecognitionModule.stop();
+        }
+      }, 1500); // 1.5 second silence after speech
+      return;
+    }
+
+    // For initial silence, increment counter
+    timeoutRef.current = setTimeout(() => {
+      if (recognizing && !lastSpeechRef.current) {
+        const newSilentTime = silentTime + 1;
+        setSilentTime(newSilentTime);
+        
+        if (newSilentTime >= MAX_SILENT_TIME) {
+          ExpoSpeechRecognitionModule.stop();
+          setTranscript('No speech detected. Please try again.');
+          setSilentTime(0);
+        } else {
+          resetTimeout();
+        }
+      }
+    }, 1000); // Check every second
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Animation values
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -114,35 +161,69 @@ export default function SmartInputScreen() {
     };
   }, [recognizing]);
 
-  useSpeechRecognitionEvent("start", () => setRecognizing(true));
-  useSpeechRecognitionEvent("end", () => setRecognizing(false));
-  useSpeechRecognitionEvent("result", (event) => {
-    setTranscript(event.results[0]?.transcript || '');
+  useSpeechRecognitionEvent("start", () => {
+    setRecognizing(true);
+    lastSpeechRef.current = false;
+    setSilentTime(0);
+    setTranscript("I'm listening...");
+    resetTimeout();
   });
+
+  useSpeechRecognitionEvent("end", () => {
+    setRecognizing(false);
+    setSilentTime(0);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+  });
+
+  useSpeechRecognitionEvent("result", (event) => {
+    const newTranscript = event.results[0]?.transcript || '';
+    if (newTranscript.trim() !== '') {
+      lastSpeechRef.current = true;
+      setSilentTime(0);
+    }
+    setTranscript(newTranscript);
+    resetTimeout();
+  });
+
   useSpeechRecognitionEvent("error", (event) => {
     // Handle known error cases more gracefully
     switch (event.error) {
       case 'no-speech':
         console.log('No speech detected');
-        setTranscript('I didn\'t hear anything. Please try speaking again.');
+        // Don't override transcript if we already have speech
+        if (!lastSpeechRef.current) {
+          setTranscript(`Listening... (${MAX_SILENT_TIME - silentTime}s remaining)`);
+        }
+        resetTimeout();
         break;
       case 'network':
         console.error('Network error during speech recognition:', event.message);
         setTranscript('Network error occurred. Please check your connection and try again.');
+        setRecognizing(false);
+        setSilentTime(0);
         break;
       case 'not-allowed':
         console.error('Speech recognition not allowed:', event.message);
         setTranscript('Speech recognition is not allowed. Please check your permissions.');
+        setRecognizing(false);
+        setSilentTime(0);
         break;
       case 'aborted':
         console.log('Speech recognition was aborted');
-        setTranscript('');  // Clear transcript on abort
+        if (!lastSpeechRef.current) {
+          setTranscript('');
+        }
+        setRecognizing(false);
+        setSilentTime(0);
         break;
       default:
         console.error("Speech recognition error:", event.error, "Message:", event.message);
         setTranscript('Sorry, I didn\'t catch that. Please try again.');
+        setRecognizing(false);
+        setSilentTime(0);
     }
-    setRecognizing(false);
   });
 
   useEffect(() => {
@@ -205,6 +286,9 @@ export default function SmartInputScreen() {
       }
 
       if (recognizing) {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
         await ExpoSpeechRecognitionModule.stop();
         return;
       }
@@ -214,7 +298,7 @@ export default function SmartInputScreen() {
         lang: "en-US",
         interimResults: true,
         maxAlternatives: 1,
-        continuous: false,
+        continuous: true, // Enable continuous recognition
         requiresOnDeviceRecognition: false,
         addsPunctuation: true,
       });
