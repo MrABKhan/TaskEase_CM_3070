@@ -1,5 +1,5 @@
-import { View, StyleSheet, Animated } from 'react-native';
-import { Text, Surface, IconButton } from 'react-native-paper';
+import { View, StyleSheet, Animated, Easing, ScrollView, SafeAreaView } from 'react-native';
+import { Text, Surface, IconButton, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -8,6 +8,7 @@ import {
 } from "expo-speech-recognition";
 
 export default function SmartInputScreen() {
+  const theme = useTheme();
   const [recognizing, setRecognizing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [hasPermission, setHasPermission] = useState(false);
@@ -66,100 +67,113 @@ export default function SmartInputScreen() {
 
   // Animation values
   const buttonScale = useRef(new Animated.Value(1)).current;
-  const wave1Scale = useRef(new Animated.Value(1)).current;
-  const wave2Scale = useRef(new Animated.Value(1)).current;
-  const wave3Scale = useRef(new Animated.Value(1)).current;
-  const waveOpacity = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const transcriptSlideUp = useRef(new Animated.Value(50)).current;
+  const transcriptOpacity = useRef(new Animated.Value(0)).current;
 
-  // Animation for waves
+  // Animation for button pulse
   useEffect(() => {
-    let waveAnimation: Animated.CompositeAnimation;
-
+    let pulseAnimation: Animated.CompositeAnimation;
+    
     if (recognizing) {
-      // Native driven animations
-      waveAnimation = Animated.parallel([
-        // Button animation
-        Animated.spring(buttonScale, {
-          toValue: 1.1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        // Waves animation
-        Animated.loop(
-          Animated.sequence([
-            Animated.parallel([
-              Animated.sequence([
-                Animated.timing(wave1Scale, {
-                  toValue: 1.2,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(wave1Scale, {
-                  toValue: 1,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.sequence([
-                Animated.delay(200),
-                Animated.timing(wave2Scale, {
-                  toValue: 1.3,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(wave2Scale, {
-                  toValue: 1,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-              ]),
-              Animated.sequence([
-                Animated.delay(400),
-                Animated.timing(wave3Scale, {
-                  toValue: 1.4,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(wave3Scale, {
-                  toValue: 1,
-                  duration: 600,
-                  useNativeDriver: true,
-                }),
-              ]),
-            ]),
-          ])
-        ),
-        Animated.timing(waveOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]);
-      waveAnimation.start();
+      pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
     } else {
-      // Native driven animations
-      waveAnimation = Animated.parallel([
-        Animated.spring(buttonScale, {
-          toValue: 1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.timing(waveOpacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]);
-      waveAnimation.start();
+      Animated.spring(pulseAnim, {
+        toValue: 1,
+        friction: 5,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
     }
 
-    // Cleanup function
     return () => {
-      waveAnimation?.stop();
+      if (pulseAnimation) {
+        pulseAnimation.stop();
+      }
     };
   }, [recognizing]);
+
+  // Animation for progress indicator
+  useEffect(() => {
+    if (recognizing && !lastSpeechRef.current) {
+      Animated.timing(progressAnim, {
+        toValue: silentTime / MAX_SILENT_TIME,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    } else if (!recognizing) {
+      Animated.timing(progressAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [silentTime, recognizing, lastSpeechRef.current]);
+
+  // Animation for button
+  useEffect(() => {
+    let buttonAnimation: Animated.CompositeAnimation;
+
+    if (recognizing) {
+      buttonAnimation = Animated.spring(buttonScale, {
+        toValue: 1.1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      });
+    } else {
+      buttonAnimation = Animated.spring(buttonScale, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      });
+    }
+    
+    buttonAnimation.start();
+
+    return () => {
+      buttonAnimation.stop();
+    };
+  }, [recognizing]);
+
+  // Animation for transcript
+  useEffect(() => {
+    if (transcript) {
+      Animated.parallel([
+        Animated.timing(transcriptSlideUp, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(transcriptOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      transcriptSlideUp.setValue(50);
+      transcriptOpacity.setValue(0);
+    }
+  }, [transcript]);
 
   useSpeechRecognitionEvent("start", () => {
     setRecognizing(true);
@@ -309,133 +323,220 @@ export default function SmartInputScreen() {
     }
   };
 
+  const getStatusColor = () => {
+    if (!recognizing) return theme.colors.primary;
+    if (lastSpeechRef.current) return '#4CD964'; // Green when actively speaking
+    return '#FF9500'; // Orange when waiting for speech
+  };
+
+  const getStatusText = () => {
+    if (!recognizing) return 'Tap to speak';
+    if (lastSpeechRef.current) return 'Listening...';
+    return `Waiting for speech (${MAX_SILENT_TIME - silentTime}s)`;
+  };
+
   return (
-    <View style={styles.container}>
-      <Surface style={styles.surface} elevation={0}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Smart Task Input</Text>
-          <Text style={styles.subtitle}>Use voice or type naturally</Text>
-        </View>
-
-        <View style={styles.voiceContainer}>
-          <Animated.View 
-            style={[
-              styles.voiceButton,
-              {
-                transform: [{ scale: buttonScale }],
-                backgroundColor: recognizing ? '#FF453A' : '#007AFF',
-              }
-            ]}
-          >
-            <IconButton
-              icon="microphone"
-              size={40}
-              iconColor="#fff"
-              onPress={handleVoiceInput}
-              style={styles.micButton}
-            />
-          </Animated.View>
-          <Animated.View 
-            style={[
-              styles.listeningIndicator,
-              { opacity: waveOpacity }
-            ]}
-          >
-            <Animated.View style={[
-              styles.wave,
-              { transform: [{ scale: wave1Scale }] }
-            ]} />
-            <Animated.View style={[
-              styles.wave,
-              styles.wave2,
-              { transform: [{ scale: wave2Scale }] }
-            ]} />
-            <Animated.View style={[
-              styles.wave,
-              styles.wave3,
-              { transform: [{ scale: wave3Scale }] }
-            ]} />
-          </Animated.View>
-        </View>
-
-        {transcript && (
-          <View style={styles.transcriptContainer}>
-            <MaterialCommunityIcons name="robot-outline" size={24} color="#666" />
-            <Text style={styles.transcriptText}>{transcript}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Surface style={styles.surface} elevation={0}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Smart Task Input</Text>
+            <Text style={styles.subtitle}>Use voice to create tasks naturally</Text>
           </View>
-        )}
 
-        <View style={styles.suggestionsContainer}>
-          <Text style={styles.suggestionsTitle}>Try saying:</Text>
-          <View style={styles.suggestions}>
-            <Text style={styles.suggestion}>"Add a work meeting tomorrow at 2 PM"</Text>
-            <Text style={styles.suggestion}>"Remind me to go to the gym at 6 PM"</Text>
-            <Text style={styles.suggestion}>"Schedule a high priority task for today"</Text>
+          <View style={styles.voiceContainer}>
+            {/* Progress ring */}
+            <View style={styles.progressContainer}>
+              <Animated.View 
+                style={[
+                  styles.progressRing, 
+                  { opacity: recognizing && !lastSpeechRef.current ? 1 : 0 }
+                ]}
+              >
+                <Animated.View 
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: progressAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0%', '100%']
+                      })
+                    }
+                  ]}
+                />
+              </Animated.View>
+            </View>
+
+            {/* Center aligned button with pulse effect */}
+            <View style={styles.buttonContainer}>
+              {/* Pulse effect */}
+              <Animated.View 
+                style={[
+                  styles.pulseCircle,
+                  {
+                    transform: [{ scale: pulseAnim }],
+                    opacity: recognizing ? 0.3 : 0,
+                    backgroundColor: getStatusColor(),
+                  }
+                ]}
+              />
+
+              {/* Main button */}
+              <Animated.View 
+                style={[
+                  styles.voiceButton,
+                  {
+                    transform: [{ scale: buttonScale }],
+                    backgroundColor: getStatusColor(),
+                  }
+                ]}
+              >
+                <IconButton
+                  icon={recognizing ? "stop" : "microphone"}
+                  size={36}
+                  iconColor="#fff"
+                  onPress={handleVoiceInput}
+                  style={styles.micButton}
+                />
+              </Animated.View>
+            </View>
+
+            {/* Status text */}
+            <Text style={styles.statusText}>{getStatusText()}</Text>
           </View>
-        </View>
-      </Surface>
-    </View>
+
+          {/* Transcript container with animation */}
+          {transcript && (
+            <Animated.View 
+              style={[
+                styles.transcriptContainer,
+                {
+                  transform: [{ translateY: transcriptSlideUp }],
+                  opacity: transcriptOpacity,
+                }
+              ]}
+            >
+              <MaterialCommunityIcons 
+                name={lastSpeechRef.current ? "text-to-speech" : "robot-outline"} 
+                size={24} 
+                color={lastSpeechRef.current ? "#4CD964" : "#666"} 
+              />
+              <Text style={styles.transcriptText}>{transcript}</Text>
+            </Animated.View>
+          )}
+
+          <View style={styles.suggestionsContainer}>
+            <Text style={styles.suggestionsTitle}>Try saying:</Text>
+            <View style={styles.suggestions}>
+              <View style={styles.suggestionItem}>
+                <MaterialCommunityIcons name="calendar-clock" size={20} color={theme.colors.primary} />
+                <Text style={styles.suggestion}>"Add a work meeting tomorrow at 2 PM"</Text>
+              </View>
+              <View style={styles.suggestionItem}>
+                <MaterialCommunityIcons name="dumbbell" size={20} color="#FF9500" />
+                <Text style={styles.suggestion}>"Remind me to go to the gym at 6 PM"</Text>
+              </View>
+              <View style={styles.suggestionItem}>
+                <MaterialCommunityIcons name="flag-variant" size={20} color="#FF3B30" />
+                <Text style={styles.suggestion}>"Schedule a high priority task for today"</Text>
+              </View>
+            </View>
+          </View>
+        </Surface>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#fff',
   },
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   surface: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 30,
+    marginTop: 10,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
+    textAlign: 'center',
   },
   voiceContainer: {
     alignItems: 'center',
-    marginBottom: 48,
+    justifyContent: 'center',
+    marginBottom: 30,
+    height: 180,
+  },
+  progressContainer: {
+    position: 'absolute',
+    bottom: 40,
+    width: '100%',
+    alignItems: 'center',
+  },
+  progressRing: {
+    width: 160,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#E5E5EA',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FF9500',
+  },
+  buttonContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseCircle: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
   },
   voiceButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   micButton: {
     margin: 0,
   },
-  listeningIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 40,
-  },
-  wave: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: '#000',
-    marginHorizontal: 2,
-    opacity: 0.3,
-  },
-  wave2: {
-    height: 30,
-    opacity: 0.6,
-  },
-  wave3: {
-    height: 40,
-    opacity: 0.9,
+  statusText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
   transcriptContainer: {
     flexDirection: 'row',
@@ -443,7 +544,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 32,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   transcriptText: {
     flex: 1,
@@ -453,19 +559,27 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   suggestionsContainer: {
-    marginTop: 'auto',
+    backgroundColor: '#f8f8f8',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
   },
   suggestionsTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 12,
+    color: '#333',
   },
   suggestions: {
     gap: 12,
   },
-  suggestion: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-}); 
+  suggestion: {
+    fontSize: 15,
+    color: '#333',
+    marginLeft: 12,
+  },
+});
