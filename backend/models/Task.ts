@@ -17,6 +17,7 @@ export interface ITask extends Document {
     completed: boolean;
   }[];
   tags: string[];
+  isAiGenerated: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,7 +46,8 @@ const TaskSchema: Schema = new Schema({
     title: { type: String, required: true },
     completed: { type: Boolean, default: false }
   }],
-  tags: [{ type: String }]
+  tags: [{ type: String }],
+  isAiGenerated: { type: Boolean, default: false }
 }, {
   timestamps: true
 });

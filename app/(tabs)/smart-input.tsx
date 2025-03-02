@@ -528,11 +528,21 @@ export default function SmartInputScreen() {
                 }
               ]}
             >
-              <MaterialCommunityIcons 
-                name={lastSpeechRef.current ? "text-to-speech" : "robot-outline"} 
-                size={24} 
-                color={lastSpeechRef.current ? "#4CD964" : "#666"} 
-              />
+              <View style={styles.transcriptHeader}>
+                <MaterialCommunityIcons 
+                  name={lastSpeechRef.current ? "text-to-speech" : "robot-outline"} 
+                  size={24} 
+                  color={lastSpeechRef.current ? "#4CD964" : "#666"} 
+                />
+                {lastSpeechRef.current && transcript && !transcript.includes("No speech detected") && (
+                  <View style={styles.aiGeneratedBadge}>
+                    <MaterialCommunityIcons name="robot" size={12} color="#007AFF" />
+                    <MaterialCommunityIcons name="star" size={10} color="#FFD700" style={{marginLeft: 2}} />
+                    <Text style={styles.aiGeneratedText}>AI Generated</Text>
+                  </View>
+                )}
+              </View>
+              
               <Text style={styles.transcriptText}>{transcript}</Text>
               
               {/* Create task button - only show if we have actual speech */}
@@ -692,8 +702,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   transcriptContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
     backgroundColor: '#f8f8f8',
     padding: 16,
     borderRadius: 12,
@@ -704,12 +713,33 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  transcriptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   transcriptText: {
-    flex: 1,
-    marginLeft: 12,
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
+    marginBottom: 8,
+  },
+  aiGeneratedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.3)',
+  },
+  aiGeneratedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#007AFF',
+    marginLeft: 2,
   },
   createTaskButton: {
     flexDirection: 'row',

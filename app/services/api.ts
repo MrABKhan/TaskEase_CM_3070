@@ -100,6 +100,7 @@ const api = {
         notes: task.notes || [],
         subtasks: task.subtasks || [],
         tags: task.tags || [],
+        isAiGenerated: task.isAiGenerated || false,
       }));
       
       logger.debug('🔄 Mapped tasks:', mappedTasks);
@@ -139,6 +140,7 @@ const api = {
         notes: task.notes || [],
         subtasks: task.subtasks || [],
         tags: task.tags || [],
+        isAiGenerated: task.isAiGenerated || false,
       }));
       
       logger.debug('🔄 Mapped today\'s tasks:', mappedTasks);

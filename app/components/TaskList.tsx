@@ -85,6 +85,7 @@ export default function TaskList({ tasks, onTaskComplete, onTaskDelete }: Props)
                     {task.isAiGenerated && (
                       <View style={styles.aiIndicator}>
                         <MaterialCommunityIcons name="robot" size={14} color="#007AFF" />
+                        <MaterialCommunityIcons name="star" size={12} color="#FFD700" style={styles.starIcon} />
                         <Text style={styles.aiIndicatorText}>AI</Text>
                       </View>
                     )}
@@ -229,16 +230,21 @@ const styles = StyleSheet.create({
   aiIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: 'rgba(0, 122, 255, 0.15)',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 10,
     marginLeft: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.3)',
   },
   aiIndicatorText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#007AFF',
+    marginLeft: 2,
+  },
+  starIcon: {
     marginLeft: 2,
   },
 }); 

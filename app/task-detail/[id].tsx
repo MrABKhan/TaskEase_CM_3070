@@ -306,6 +306,7 @@ export default function TaskDetailScreen() {
               {task.isAiGenerated && (
                 <View style={styles.aiIndicator}>
                   <MaterialCommunityIcons name="robot" size={16} color="#007AFF" />
+                  <MaterialCommunityIcons name="star" size={14} color="#FFD700" style={styles.starIcon} />
                   <Text style={styles.aiIndicatorText}>AI Generated</Text>
                 </View>
               )}
@@ -713,18 +714,29 @@ const styles = StyleSheet.create({
   aiIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(0, 122, 255, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
     marginTop: 8,
     alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   aiIndicatorText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#007AFF',
     marginLeft: 4,
+  },
+  starIcon: {
+    marginLeft: 3,
+    marginRight: 1,
   },
 });
 
