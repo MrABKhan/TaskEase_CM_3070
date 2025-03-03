@@ -35,6 +35,9 @@ interface SmartContext {
   focusStatus: {
     state: string;
     timeLeft: string;
+    details: string;
+    recommendation: string;
+    priority: string;
   };
   energyLevel: string;
   suggestedActivity: string;
@@ -52,7 +55,13 @@ export default function TabOneScreen() {
   const [contextData, setContextData] = useState<SmartContext>({
     weather: { icon: "☀️", temp: "22°", condition: "Clear skies" },
     urgentTasks: { count: 2, nextDue: "2:00 PM" },
-    focusStatus: { state: "Peak", timeLeft: "45m" },
+    focusStatus: { 
+      state: "Peak", 
+      timeLeft: "45m", 
+      details: "Morning hours are optimal for deep work and complex problem-solving.",
+      recommendation: "Focus on your most challenging tasks that require critical thinking.",
+      priority: "high"
+    },
     energyLevel: "high",
     suggestedActivity: "creative work",
     nextBreak: "11:30 AM",
@@ -249,6 +258,19 @@ export default function TabOneScreen() {
     }
   };
 
+  const getFocusPriorityColor = (priority: string): string => {
+    switch (priority) {
+      case 'high':
+        return '#FF453A';
+      case 'medium':
+        return '#FF9F0A';
+      case 'low':
+        return '#30D158';
+      default:
+        return '#666';
+    }
+  };
+
   // Add logging for smart context data
   useEffect(() => {
     console.log('[SmartContext] Current Context:', {
@@ -327,15 +349,29 @@ export default function TabOneScreen() {
             </View>
             <View style={styles.insightContainer}>
               <Text style={styles.insightText}>
-                <Text style={styles.insightHighlight}>Today's Focus: </Text>
-                You have {contextData.urgentTasks.count} high-priority tasks ahead. Your energy levels suggest it's a good time for {contextData.suggestedActivity}.
+                <Text style={styles.focusState}>
+                  {contextData.focusStatus.state}
+                </Text>
               </Text>
-              <Text style={styles.insightText}>
-                💡 {contextData.insight}
-              </Text>
-              <Text style={styles.breakReminder}>
-                ⏰ Next suggested break: {contextData.nextBreak}
-              </Text>
+              
+              <View style={styles.focusDetailsContainer}>
+                <Text style={styles.insightText}>
+                  🧠 {contextData.focusStatus.details}
+                </Text>
+                
+                <Text style={styles.insightText}>
+                  ✅ <Text style={styles.insightHighlight}>Recommendation: </Text>
+                  {contextData.focusStatus.recommendation}
+                </Text>
+                
+                <Text style={styles.insightText}>
+                  💡 {contextData.insight}
+                </Text>
+                
+                <Text style={styles.breakReminder}>
+                  ⏰ Next suggested break: {contextData.nextBreak}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -704,18 +740,31 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   insightContainer: {
-    gap: 8,
+    gap: 12,
+  },
+  focusDetailsContainer: {
+    marginTop: 12,
+    marginBottom: 12,
+    gap: 12,
   },
   insightText: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
   },
   insightHighlight: {
     fontWeight: '600',
+    color: '#333',
+  },
+  focusState: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
   },
   breakReminder: {
     fontSize: 14,
     color: '#666',
+    lineHeight: 20,
     marginTop: 4,
   },
   statsContainer: {
@@ -1187,10 +1236,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
-  insightText: {
-    fontSize: 14,
-    color: '#666',
-  },
   insightDescription: {
     fontSize: 13,
     color: '#666',
@@ -1305,6 +1350,9 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF453A',
+  },
+  energyLevel: {
+    fontWeight: 'bold',
   },
 });
 

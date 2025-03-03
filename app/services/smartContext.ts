@@ -25,6 +25,9 @@ export interface SmartContext {
   focusStatus: {
     state: string;
     timeLeft: string;
+    details: string; // Detailed focus information
+    recommendation: string; // Specific focus recommendation
+    priority: string; // Priority level for focus (high/medium/low)
   };
   energyLevel: string;
   suggestedActivity: string;
@@ -228,6 +231,25 @@ const generateStaticSmartContext = async (
   else if (currentHour >= 14 && currentHour <= 17) focusState = 'Productive';
   else if (currentHour >= 22 || currentHour <= 6) focusState = 'Rest';
 
+  // Generate focus details and recommendations
+  let focusDetails = 'Maintain regular work patterns';
+  let focusRecommendation = 'Follow your usual task schedule';
+  let focusPriority = 'medium';
+
+  if (focusState === 'Peak Focus Time') {
+    focusDetails = 'Take advantage of your natural rhythm - your mind is clear and ready for meaningful work. This is your time to shine and make progress on what matters most to you.';
+    focusRecommendation = 'Consider starting with your most important task while your energy is high. Remember to take short breaks to maintain this great momentum.';
+    focusPriority = 'high';
+  } else if (focusState === 'Productive') {
+    focusDetails = 'You\'re in a steady flow, with good energy for balanced work. This is a great time to collaborate and make progress on your ongoing projects.';
+    focusRecommendation = 'Mix focused work with collaborative tasks to keep your energy flowing. Stay hydrated and take brief stretches to maintain your rhythm.';
+    focusPriority = 'medium';
+  } else if (focusState === 'Rest') {
+    focusDetails = 'Listen to your body\'s natural rhythm - this is your time to recharge and reflect. Quality rest now will set you up for success tomorrow.';
+    focusRecommendation = 'Focus on light, enjoyable tasks that don\'t require heavy mental lifting. Consider preparing for tomorrow to start fresh.';
+    focusPriority = 'low';
+  }
+
   // Get next task start time for any incomplete task
   const upcomingTasks = tasks
     .filter(t => {
@@ -310,7 +332,10 @@ const generateStaticSmartContext = async (
       state: focusState,
       timeLeft: upcomingTasks.length > 0
         ? `Until ${formatTime(safeParseDate(upcomingTasks[0].date, upcomingTasks[0].startTime))}`
-        : 'No upcoming tasks'
+        : 'No upcoming tasks',
+      details: focusDetails,
+      recommendation: focusRecommendation,
+      priority: focusPriority
     },
     energyLevel,
     suggestedActivity,
@@ -401,7 +426,7 @@ const generateOpenAIContext = async (
   console.log('[SmartContext] Sending prompt to LLM...');
 
   // Create the prompt for the LLM
-  const prompt = `As an AI task assistant, analyze the following context and generate a smart, personalized summary that considers weather and location factors:
+  const prompt = `As an AI task assistant, analyze the following context and generate a smart, personalized summary that considers tasks, patterns, and environmental factors:
 
 Current Time: ${context.currentTime}
 Current Date: ${context.currentDate}
@@ -417,20 +442,29 @@ Weather: ${JSON.stringify(context.weather, null, 2)}
 Location: ${JSON.stringify(context.location, null, 2)}
 
 Consider these factors in your analysis:
-1. Weather Impact:
-   - Suggest indoor/outdoor activities based on temperature and conditions
-   - Include health considerations (hydration, sun protection, etc.)
-   - Consider weather's effect on travel and task scheduling
+1. Task Analysis:
+   - Review completed and upcoming tasks
+   - Identify patterns in task completion
+   - Consider task categories and priorities
+   - Look for optimal timing based on user history
 
-2. Location Context:
-   - Urban vs Rural considerations for transportation
-   - Local time context (business hours, daylight)
-   - Nearby amenities and their relevance to tasks
+2. Focus Optimization:
+   - Create a personal, inspirational message about the day and week ahead
+   - Consider the user's current state, tasks, and challenges
+   - Frame recommendations in a supportive, encouraging way
+   - Balance ambition with well-being
 
-3. Task Adaptations:
-   - Suggest alternative locations or timings based on weather
-   - Consider public transport vs personal vehicle based on location
-   - Account for local events or conditions that might affect tasks
+3. Smart Recommendations:
+   - Provide specific, actionable focus strategies
+   - Suggest task grouping or reordering
+   - Consider breaks and energy management
+   - Account for location and weather impact
+
+4. Personalization:
+   - Write the focus status details as a personal quote or message
+   - Make it feel like advice from a supportive friend
+   - Acknowledge both achievements and upcoming challenges
+   - Keep the tone warm and encouraging
 
 Generate a response in the following JSON format:
 {
@@ -444,13 +478,16 @@ Generate a response in the following JSON format:
     "nextDue": "time of next urgent task"
   },
   "focusStatus": {
-    "state": "current focus state based on time and analytics",
-    "timeLeft": "time until next break or task"
+    "state": "current focus state based on task patterns and completion rates",
+    "timeLeft": "time until next significant task or break",
+    "details": "A personal, inspirational message about today and the week ahead, written like a supportive quote (2-3 sentences)",
+    "recommendation": "gentle, actionable guidance framed as friendly advice (2-3 sentences)",
+    "priority": "priority level for focus (high/medium/low)"
   },
-  "energyLevel": "predicted energy level (high/medium/low) based on time and analytics",
-  "suggestedActivity": "recommended task type based on energy, time, weather, and location",
-  "nextBreak": "suggested next break time based on current schedule",
-  "insight": "personalized productivity insight considering weather and location",
+  "energyLevel": "predicted energy level based on time and task patterns",
+  "suggestedActivity": "specific task or category to focus on now",
+  "nextBreak": "suggested next break time based on task load",
+  "insight": "personalized insight based on task patterns and current context",
   "weatherImpact": {
     "outdoorSuitability": "brief assessment of outdoor activity suitability",
     "healthConsiderations": "relevant health advice based on weather",
@@ -469,7 +506,7 @@ Generate a response in the following JSON format:
     messages: [
       {
         role: 'system',
-        content: 'You are a helpful AI task assistant that provides smart context for task management, considering weather and location factors.',
+        content: 'You are a mindful and empathetic AI companion focused on personal well-being and balanced productivity. When analyzing tasks and providing focus recommendations, maintain a calm and supportive tone. Consider the user\'s energy levels, task load, and environmental factors to offer gentle guidance. Your insights should feel like a friendly conversation, acknowledging both achievements and challenges. Use emojis thoughtfully to convey warmth and encouragement. Focus on sustainable productivity that prioritizes well-being over pure efficiency. Provide specific yet nurturing insights based on task patterns and optimal timing, while being mindful of potential stress factors.',
       },
       {
         role: 'user',
