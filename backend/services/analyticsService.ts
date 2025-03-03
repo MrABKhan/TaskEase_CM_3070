@@ -21,6 +21,33 @@ export interface ActivityMetrics {
   };
 }
 
+export interface WellnessMetrics {
+  stressLevel: {
+    current: number;  // 0-100 scale
+    trend: 'increasing' | 'decreasing' | 'stable';
+    history: {
+      date: string;
+      value: number;
+    }[];
+  };
+  workLifeBalance: {
+    score: number;  // 0-100 scale
+    workPercentage: number;
+    personalPercentage: number;
+    history: {
+      date: string;
+      workPercentage: number;
+      personalPercentage: number;
+    }[];
+  };
+  breakCompliance: {
+    score: number;  // 0-100 scale
+    breaksPlanned: number;
+    breaksTaken: number;
+    averageDuration: number;  // in minutes
+  };
+}
+
 const TIME_SLOTS = [
   '6AM-9AM', '9AM-12PM', '12PM-3PM', '3PM-6PM', '6PM-9PM', '9PM-12AM'
 ];
@@ -163,4 +190,180 @@ export const calculateActivityMetrics = async (userId: string): Promise<Activity
     mostProductiveTime,
     mostProductiveDay
   };
+};
+
+export const calculateWellnessMetrics = async (userId: string): Promise<WellnessMetrics> => {
+  const endDate = new Date();
+  const startDate = subDays(endDate, 14); // Get last 14 days
+
+  const tasks = await Task.find({
+    userId,
+    date: {
+      $gte: startOfDay(startDate),
+      $lte: endOfDay(endDate)
+    }
+  });
+
+  // Initialize wellness metrics
+  const wellnessMetrics: WellnessMetrics = {
+    stressLevel: {
+      current: 0,
+      trend: 'stable',
+      history: []
+    },
+    workLifeBalance: {
+      score: 0,
+      workPercentage: 0,
+      personalPercentage: 0,
+      history: []
+    },
+    breakCompliance: {
+      score: 0,
+      breaksPlanned: 0,
+      breaksTaken: 0,
+      averageDuration: 0
+    }
+  };
+
+  // Group tasks by date
+  const tasksByDate: Record<string, any[]> = {};
+  tasks.forEach(task => {
+    const dateStr = format(new Date(task.date), 'yyyy-MM-dd');
+    if (!tasksByDate[dateStr]) {
+      tasksByDate[dateStr] = [];
+    }
+    tasksByDate[dateStr].push(task);
+  });
+
+  // Calculate metrics for each day
+  const dates = Object.keys(tasksByDate).sort();
+  
+  // Process each day's data
+  dates.forEach(date => {
+    const dayTasks = tasksByDate[date];
+    
+    // Calculate stress level based on task density, priority, and completion rate
+    let stressScore = 0;
+    let workTasks = 0;
+    let personalTasks = 0;
+    
+    dayTasks.forEach(task => {
+      // Stress calculation factors:
+      // 1. Task priority (high: +3, medium: +2, low: +1)
+      // 2. Completion status (incomplete high priority: +2)
+      // 3. Task density (number of tasks per day)
+      
+      const priorityScore = task.priority === 'high' ? 3 : task.priority === 'medium' ? 2 : 1;
+      stressScore += priorityScore;
+      
+      if (!task.completed && task.priority === 'high') {
+        stressScore += 2;
+      }
+      
+      // Work-life balance calculation
+      if (['work', 'study'].includes(task.category)) {
+        workTasks++;
+      } else {
+        personalTasks++;
+      }
+    });
+    
+    // Normalize stress score to 0-100 scale
+    // Base stress from number of tasks (0-10 tasks: 0-50, >10 tasks: 50-70)
+    const baseDensityStress = Math.min(dayTasks.length * 5, 70);
+    
+    // Additional stress from priority and completion factors (0-30)
+    const maxPossibleStressScore = dayTasks.length * 5; // Maximum possible stress score
+    const normalizedAdditionalStress = maxPossibleStressScore > 0 
+      ? (stressScore / maxPossibleStressScore) * 30 
+      : 0;
+    
+    const totalStress = Math.min(baseDensityStress + normalizedAdditionalStress, 100);
+    
+    // Add to history
+    wellnessMetrics.stressLevel.history.push({
+      date,
+      value: totalStress
+    });
+    
+    // Calculate work-life balance
+    const totalTasks = workTasks + personalTasks;
+    const workPercentage = totalTasks > 0 ? (workTasks / totalTasks) * 100 : 50;
+    const personalPercentage = totalTasks > 0 ? (personalTasks / totalTasks) * 100 : 50;
+    
+    wellnessMetrics.workLifeBalance.history.push({
+      date,
+      workPercentage,
+      personalPercentage
+    });
+  });
+  
+  // Calculate current stress level (average of last 3 days or available days)
+  const recentStressHistory = wellnessMetrics.stressLevel.history.slice(-3);
+  if (recentStressHistory.length > 0) {
+    const sum = recentStressHistory.reduce((acc, day) => acc + day.value, 0);
+    wellnessMetrics.stressLevel.current = Math.round(sum / recentStressHistory.length);
+  }
+  
+  // Calculate stress trend
+  if (wellnessMetrics.stressLevel.history.length >= 2) {
+    const lastWeek = wellnessMetrics.stressLevel.history.slice(-7);
+    const firstHalf = lastWeek.slice(0, Math.ceil(lastWeek.length / 2));
+    const secondHalf = lastWeek.slice(Math.ceil(lastWeek.length / 2));
+    
+    const firstHalfAvg = firstHalf.length > 0 
+      ? firstHalf.reduce((acc, day) => acc + day.value, 0) / firstHalf.length 
+      : 0;
+    const secondHalfAvg = secondHalf.length > 0 
+      ? secondHalf.reduce((acc, day) => acc + day.value, 0) / secondHalf.length 
+      : 0;
+    
+    const difference = secondHalfAvg - firstHalfAvg;
+    
+    if (difference > 5) {
+      wellnessMetrics.stressLevel.trend = 'increasing';
+    } else if (difference < -5) {
+      wellnessMetrics.stressLevel.trend = 'decreasing';
+    } else {
+      wellnessMetrics.stressLevel.trend = 'stable';
+    }
+  }
+  
+  // Calculate work-life balance score
+  if (wellnessMetrics.workLifeBalance.history.length > 0) {
+    const recentHistory = wellnessMetrics.workLifeBalance.history.slice(-7);
+    let totalWorkPercentage = 0;
+    let totalPersonalPercentage = 0;
+    
+    recentHistory.forEach(day => {
+      totalWorkPercentage += day.workPercentage;
+      totalPersonalPercentage += day.personalPercentage;
+    });
+    
+    const avgWorkPercentage = recentHistory.length > 0 
+      ? totalWorkPercentage / recentHistory.length 
+      : 50;
+    const avgPersonalPercentage = recentHistory.length > 0 
+      ? totalPersonalPercentage / recentHistory.length 
+      : 50;
+    
+    wellnessMetrics.workLifeBalance.workPercentage = Math.round(avgWorkPercentage);
+    wellnessMetrics.workLifeBalance.personalPercentage = Math.round(avgPersonalPercentage);
+    
+    // Calculate balance score (100 = perfect balance at 50/50, 0 = complete imbalance)
+    // The closer to 50/50 split, the higher the score
+    const balanceDeviation = Math.abs(avgWorkPercentage - 50);
+    wellnessMetrics.workLifeBalance.score = Math.round(100 - (balanceDeviation * 2));
+  }
+  
+  // For now, set placeholder values for break compliance
+  // This will be implemented in the next phase
+  wellnessMetrics.breakCompliance = {
+    score: 70,
+    breaksPlanned: 5,
+    breaksTaken: 3,
+    averageDuration: 15
+  };
+  
+  return wellnessMetrics;
 }; 

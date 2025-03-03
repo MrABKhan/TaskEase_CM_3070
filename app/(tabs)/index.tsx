@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
-import api, { ActivityMetrics, Task } from '../services/api';
+import api, { ActivityMetrics, Task, WellnessMetrics } from '../services/api';
 import { generateSmartContext } from '../services/smartContext';
 import TaskList from '../components/TaskList';
 
@@ -43,6 +43,8 @@ export default function TabOneScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
+  const [wellnessMetrics, setWellnessMetrics] = useState<WellnessMetrics | null>(null);
+  const [wellnessLoading, setWellnessLoading] = useState(false);
   const [contextData, setContextData] = useState<SmartContext>({
     weather: { icon: "☀️", temp: "22°", condition: "Clear skies" },
     urgentTasks: { count: 2, nextDue: "2:00 PM" },
@@ -67,6 +69,7 @@ export default function TabOneScreen() {
     useCallback(() => {
       loadTasks();
       loadAnalytics();
+      loadWellnessMetrics();
     }, [])
   );
 
@@ -119,6 +122,20 @@ export default function TabOneScreen() {
       console.error('[Analytics] Error loading activity metrics:', error);
     } finally {
       setAnalyticsLoading(false);
+    }
+  };
+
+  const loadWellnessMetrics = async () => {
+    try {
+      console.log('[Wellness] Loading wellness metrics...');
+      setWellnessLoading(true);
+      const metrics = await api.getWellnessMetrics();
+      setWellnessMetrics(metrics);
+      console.log('[Wellness] Wellness metrics loaded:', metrics);
+    } catch (error) {
+      console.error('[Wellness] Error loading wellness metrics:', error);
+    } finally {
+      setWellnessLoading(false);
     }
   };
 
@@ -449,257 +466,6 @@ export default function TabOneScreen() {
             ) : (
               <Text style={styles.emptyText}>No tasks scheduled for today</Text>
             )}
-          </View>
-
-          {/* Analytics Section */}
-          <View style={styles.analyticsContainer}>
-            <Text style={styles.sectionTitle}>Analytics Insights</Text>
-            
-            {/* Activity Graph */}
-            <View style={[styles.analyticsCard, styles.activityCard]}>
-              <Text style={styles.analyticsTitle}>Activity Overview</Text>
-              
-              <View style={styles.activityContainer}>
-                {/* Time Period Labels */}
-                <View style={styles.timePeriodLabels}>
-                  {activityMetrics?.dailyActivity[0]?.timeSlots.map(slot => (
-                    <Text key={slot.slot} style={styles.timeLabel}>
-                      {slot.slot.split('-')[0]}
-                    </Text>
-                  ))}
-                </View>
-
-                <View style={styles.graphContainer}>
-                  {/* Day Labels and Activity Grid */}
-                  {activityMetrics?.dailyActivity.slice(-5).map((day, dayIndex) => (
-                    <View key={day.date} style={styles.dayRow}>
-                      <Text style={styles.dayLabel}>
-                        {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                      </Text>
-                      <View style={styles.activityRow}>
-                        {day.timeSlots.map((slot, timeIndex) => (
-                          <Pressable
-                            key={timeIndex}
-                            onPress={() => {
-                              console.log(`${day.date}, ${slot.slot}: ${slot.tasksCount} tasks, ${slot.completedCount} completed`);
-                            }}
-                          >
-                            <View
-                              style={[
-                                styles.activityCell,
-                                {
-                                  backgroundColor: slot.intensity === 0
-                                    ? '#E3E3E3'
-                                    : slot.intensity <= 0.3
-                                      ? '#96E4AB'
-                                      : slot.intensity <= 0.7
-                                        ? '#63DA82'
-                                        : '#30D158'
-                              }
-                            ]}
-                          />
-                          </Pressable>
-                        ))}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-
-                <View style={styles.activityLegend}>
-                  <Text style={styles.activityLegendText}>Less</Text>
-                  <View style={styles.activityLegendCells}>
-                    {['#E3E3E3', '#96E4AB', '#63DA82', '#30D158'].map((color, index) => (
-                      <View
-                        key={index}
-                        style={[styles.activityLegendCell, { backgroundColor: color }]}
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.activityLegendText}>More</Text>
-                </View>
-
-                <View style={styles.productivityInsights}>
-                  {activityMetrics?.mostProductiveTime && (
-                    <View style={styles.productivityInsight}>
-                      <MaterialCommunityIcons name="clock-outline" size={20} color="#666" style={styles.insightIcon} />
-                      <View style={styles.insightContent}>
-                        <Text style={styles.insightLabel}>Most Productive Time</Text>
-                        <Text style={styles.insightValue}>
-                          {activityMetrics.mostProductiveTime.slot}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                  {activityMetrics?.mostProductiveDay && (
-                    <View style={styles.productivityInsight}>
-                      <MaterialCommunityIcons name="calendar" size={20} color="#666" style={styles.insightIcon} />
-                      <View style={styles.insightContent}>
-                        <Text style={styles.insightLabel}>Most Productive Day</Text>
-                        <Text style={styles.insightValue}>
-                          {activityMetrics.mostProductiveDay.day} 
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-
-                {analyticsLoading ? (
-                  <ActivityIndicator style={{ marginTop: 16 }} />
-                ) : (
-                  <View style={styles.activityStats}>
-                    <View style={styles.activityStat}>
-                      <Text style={styles.activityStatValue}>
-                        {activityMetrics?.dailyActivity.reduce((sum, day) => 
-                          sum + day.timeSlots.reduce((s, slot) => s + slot.completedCount, 0), 0) ?? 0}
-                      </Text>
-                      <Text style={styles.activityStatLabel}>Tasks Completed</Text>
-                    </View>
-                    <View style={styles.activityStat}>
-                      <Text style={styles.activityStatValue}>
-                        {activityMetrics?.dailyActivity.reduce((sum, day) => 
-                          sum + day.timeSlots.reduce((s, slot) => s + slot.tasksCount, 0), 0) ?? 0}
-                      </Text>
-                      <Text style={styles.activityStatLabel}>Total Tasks</Text>
-                    </View>
-                    <View style={styles.activityStat}>
-                      <Text style={styles.activityStatValue}>
-                        {(() => {
-                          if (!activityMetrics) return '0%';
-                          const totalTasks = activityMetrics.dailyActivity.reduce((sum, day) => 
-                            sum + day.timeSlots.reduce((s, slot) => s + slot.tasksCount, 0), 0);
-                          if (totalTasks === 0) return '0%';
-                          const completedTasks = activityMetrics.dailyActivity.reduce((sum, day) => 
-                            sum + day.timeSlots.reduce((s, slot) => s + slot.completedCount, 0), 0);
-                          return `${Math.round((completedTasks / totalTasks) * 100)}%`;
-                        })()}
-                      </Text>
-                      <Text style={styles.activityStatLabel}>Completion Rate</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Wellness & Balance Analytics */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Wellness & Balance</Text>
-              <View style={styles.wellnessContainer}>
-                {/* Stress Level Indicator */}
-                <View style={[styles.wellnessMetric, styles.metricCard]}>
-                  <View style={styles.wellnessHeader}>
-                    <MaterialCommunityIcons name="brain" size={20} color="#6366F1" />
-                    <Text style={styles.wellnessTitle}>Stress Level</Text>
-                  </View>
-                  <View style={styles.stressIndicator}>
-                    <View style={styles.stressBarContainer}>
-                      <View style={[styles.stressBar, { width: '35%', backgroundColor: '#6366F1' }]} />
-                    </View>
-                    <Text style={[styles.stressLabel, { color: '#6366F1' }]}>Low</Text>
-                  </View>
-                  <Text style={styles.wellnessSubtext}>Based on task completion patterns and work hours</Text>
-                </View>
-
-                {/* Work-Life Balance */}
-                <View style={[styles.wellnessMetric, styles.metricCard]}>
-                  <View style={styles.wellnessHeader}>
-                    <MaterialCommunityIcons name="chart-pie" size={20} color="#EC4899" />
-                    <Text style={styles.wellnessTitle}>Work-Life Balance</Text>
-                  </View>
-                  <View style={styles.balanceDistribution}>
-                    <View style={[styles.balanceItem, { backgroundColor: '#EC489915' }]}>
-                      <Text style={[styles.balanceValue, { color: '#EC4899' }]}>60%</Text>
-                      <Text style={styles.balanceLabel}>Work</Text>
-                    </View>
-                    <View style={[styles.balanceItem, { backgroundColor: '#8B5CF615' }]}>
-                      <Text style={[styles.balanceValue, { color: '#8B5CF6' }]}>25%</Text>
-                      <Text style={styles.balanceLabel}>Personal</Text>
-                    </View>
-                    <View style={[styles.balanceItem, { backgroundColor: '#10B98115' }]}>
-                      <Text style={[styles.balanceValue, { color: '#10B981' }]}>15%</Text>
-                      <Text style={styles.balanceLabel}>Health</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Break Compliance */}
-                <View style={[styles.wellnessMetric, styles.metricCard]}>
-                  <View style={styles.wellnessHeader}>
-                    <MaterialCommunityIcons name="coffee" size={20} color="#F59E0B" />
-                    <Text style={styles.wellnessTitle}>Break Compliance</Text>
-                  </View>
-                  <View style={styles.breakProgress}>
-                    <Text style={styles.breakStats}>
-                      <Text style={[styles.breakHighlight, { color: '#F59E0B' }]}>8/10</Text>
-                      <Text> suggested breaks taken</Text>
-                    </Text>
-                    <View style={styles.breakBar}>
-                      {[...Array(10)].map((_, index) => (
-                        <View
-                          key={index}
-                          style={[
-                            styles.breakDot,
-                            { backgroundColor: index < 8 ? '#F59E0B' : '#F59E0B30' }
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  </View>
-                  <Text style={styles.wellnessSubtext}>You're doing great at maintaining regular breaks!</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Personalization Insights */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Personal Insights</Text>
-              <View style={styles.insightsContainer}>
-                <View style={[styles.insightMetric, styles.metricCard]}>
-                  <View style={[styles.insightIconContainer, { backgroundColor: '#6366F115' }]}>
-                    <MaterialCommunityIcons name="lightbulb-outline" size={20} color="#6366F1" />
-                  </View>
-                  <View style={styles.insightContentWrapper}>
-                    <Text style={[styles.insightTitle, { color: '#6366F1' }]}>Energy Pattern</Text>
-                    <Text style={styles.insightText}>Your peak productivity occurs during</Text>
-                    <View style={styles.insightMetricContainer}>
-                      <Text style={[styles.insightMetricValue, { color: '#6366F1' }]}>9-11 AM</Text>
-                      <Text style={styles.insightMetricLabel}>(Morning)</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.insightMetric, styles.metricCard]}>
-                  <View style={[styles.insightIconContainer, { backgroundColor: '#EC489915' }]}>
-                    <MaterialCommunityIcons name="chart-bell-curve" size={20} color="#EC4899" />
-                  </View>
-                  <View style={styles.insightContentWrapper}>
-                    <Text style={[styles.insightTitle, { color: '#EC4899' }]}>Task Load Analysis</Text>
-                    <Text style={styles.insightText}>Best performance early in the week</Text>
-                    <View style={styles.insightMetricContainer}>
-                      <View style={[styles.loadIndicator, { backgroundColor: '#EC489915' }]}>
-                        <Text style={[styles.loadText, { color: '#EC4899' }]}>Moderate Load</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.insightMetric, styles.metricCard]}>
-                  <View style={[styles.insightIconContainer, { backgroundColor: '#10B98115' }]}>
-                    <MaterialCommunityIcons name="trending-up" size={20} color="#10B981" />
-                  </View>
-                  <View style={styles.insightContentWrapper}>
-                    <Text style={[styles.insightTitle, { color: '#10B981' }]}>Focus Score Trend</Text>
-                    <Text style={styles.insightText}>Weekly improvement</Text>
-                    <View style={styles.insightMetricContainer}>
-                      <Text style={[styles.insightMetricValue, { color: '#10B981' }]}>+15%</Text>
-                      <View style={[styles.trendIndicator, { backgroundColor: '#10B98115' }]}>
-                        <MaterialCommunityIcons name="arrow-up" size={14} color="#10B981" />
-                        <Text style={[styles.trendText, { color: '#10B981' }]}>Improving</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
           </View>
         </Surface>
       </ScrollView>

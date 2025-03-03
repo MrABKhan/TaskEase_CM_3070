@@ -63,6 +63,33 @@ export interface ActivityMetrics {
   };
 }
 
+export interface WellnessMetrics {
+  stressLevel: {
+    current: number;  // 0-100 scale
+    trend: 'increasing' | 'decreasing' | 'stable';
+    history: {
+      date: string;
+      value: number;
+    }[];
+  };
+  workLifeBalance: {
+    score: number;  // 0-100 scale
+    workPercentage: number;
+    personalPercentage: number;
+    history: {
+      date: string;
+      workPercentage: number;
+      personalPercentage: number;
+    }[];
+  };
+  breakCompliance: {
+    score: number;  // 0-100 scale
+    breaksPlanned: number;
+    breaksTaken: number;
+    averageDuration: number;  // in minutes
+  };
+}
+
 const logAxiosError = (error: AxiosError) => {
   logger.error('🔍 Detailed Error Information:');
   logger.error('- Message:', error.message);
@@ -239,6 +266,24 @@ const api = {
       });
       logger.debug('📥 Activity analytics response:', response.data);
       return response.data as ActivityMetrics;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        logger.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  getWellnessMetrics: async () => {
+    logger.info('📤 Fetching wellness metrics for user:', TEMP_USER_ID);
+    try {
+      const response = await axios.get(`${API_URL}/analytics/wellness`, {
+        params: { userId: TEMP_USER_ID }
+      });
+      logger.debug('📥 Wellness metrics response:', response.data);
+      return response.data as WellnessMetrics;
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);
