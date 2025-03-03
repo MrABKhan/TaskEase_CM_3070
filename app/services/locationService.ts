@@ -99,9 +99,7 @@ export const getCurrentLocation = async (forceRefresh: boolean = false): Promise
     
     // Try to get location with low accuracy first for faster response
     try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Low
-      });
+      const location = await Location.getCurrentPositionAsync({accuracy: Location.Accuracy.Highest, maximumAge: 10000});
 
       if (location) {
         logLocation.debug('Location received with low accuracy', {

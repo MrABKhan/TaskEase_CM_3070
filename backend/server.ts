@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import taskRoutes from './routes/tasks';
+import analyticsRoutes from './routes/analytics';
 import Task from './models/Task';
 import { generateYearOfTasks } from './utils/taskGenerator';
 
@@ -17,7 +18,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/tasks', taskRoutes);
-
+app.use('/api/analytics', analyticsRoutes);
 // Add health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });

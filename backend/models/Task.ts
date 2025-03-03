@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITask extends Document {
+  id: string;
   title: string;
   description: string;
   category: 'work' | 'health' | 'study' | 'leisure' | 'shopping' | 'family';
@@ -9,7 +10,6 @@ export interface ITask extends Document {
   endTime: string;
   date: Date;
   completed: boolean;
-  userId: string;
   notes: string[];
   subtasks: {
     id: string;
@@ -17,12 +17,11 @@ export interface ITask extends Document {
     completed: boolean;
   }[];
   tags: string[];
-  isAiGenerated: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  isAiGenerated?: boolean;
+  userId: string;
 }
 
-const TaskSchema: Schema = new Schema({
+const taskSchema = new Schema<ITask>({
   title: { type: String, required: true },
   description: { type: String, default: '' },
   category: { 
@@ -30,8 +29,8 @@ const TaskSchema: Schema = new Schema({
     required: true,
     enum: ['work', 'health', 'study', 'leisure', 'shopping', 'family']
   },
-  priority: {
-    type: String,
+  priority: { 
+    type: String, 
     required: true,
     enum: ['high', 'medium', 'low']
   },
@@ -39,22 +38,31 @@ const TaskSchema: Schema = new Schema({
   endTime: { type: String, required: true },
   date: { type: Date, required: true },
   completed: { type: Boolean, default: false },
-  userId: { type: String, required: true },
   notes: [{ type: String }],
   subtasks: [{
-    id: { type: String, required: true},
+    id: { type: String, required: true },
     title: { type: String, required: true },
     completed: { type: Boolean, default: false }
   }],
   tags: [{ type: String }],
-  isAiGenerated: { type: Boolean, default: false }
+  isAiGenerated: { type: Boolean, default: false },
+  userId: { type: String, required: true }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  }
 });
 
 // Add indexes for better query performance
-TaskSchema.index({ userId: 1, date: 1 });
-TaskSchema.index({ userId: 1, category: 1 });
-TaskSchema.index({ userId: 1, completed: 1 });
+taskSchema.index({ userId: 1, date: 1 });
+taskSchema.index({ userId: 1, category: 1 });
+taskSchema.index({ userId: 1, completed: 1 });
 
-export default mongoose.model<ITask>('Task', TaskSchema); 
+export default mongoose.model<ITask>('Task', taskSchema); 

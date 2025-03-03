@@ -43,6 +43,26 @@ export interface Task {
   isAiGenerated?: boolean;
 }
 
+export interface ActivityMetrics {
+  dailyActivity: {
+    date: string;
+    timeSlots: {
+      slot: string;
+      intensity: number;
+      tasksCount: number;
+      completedCount: number;
+    }[];
+  }[];
+  mostProductiveTime: {
+    slot: string;
+    completionRate: number;
+  };
+  mostProductiveDay: {
+    day: string;
+    completionRate: number;
+  };
+}
+
 const logAxiosError = (error: AxiosError) => {
   logger.error('🔍 Detailed Error Information:');
   logger.error('- Message:', error.message);
@@ -201,6 +221,24 @@ const api = {
         ...response.data,
         id: response.data._id
       };
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        logger.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
+  getActivityAnalytics: async () => {
+    logger.info('📤 Fetching activity analytics for user:', TEMP_USER_ID);
+    try {
+      const response = await axios.get(`${API_URL}/analytics/activity`, {
+        params: { userId: TEMP_USER_ID }
+      });
+      logger.debug('📥 Activity analytics response:', response.data);
+      return response.data as ActivityMetrics;
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);

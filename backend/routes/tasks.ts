@@ -62,19 +62,30 @@ router.get('/', async (req, res) => {
 router.get('/today', async (req, res) => {
   try {
     const { userId } = req.query;
-    const today = new Date();
     
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+
+    const today = new Date();
     const tasks = await Task.find({
-      userId,
+      userId: userId as string,
       date: {
         $gte: startOfDay(today),
         $lte: endOfDay(today)
       }
     }).sort({ startTime: 1 });
 
-    res.json(tasks);
+    console.log('Fetched today\'s tasks:', {
+      userId,
+      count: tasks.length,
+      date: today
+    });
+
+    return res.json(tasks);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching today\'s tasks', error });
+    console.error('Error fetching today\'s tasks:', error);
+    return res.status(500).json({ message: 'Error fetching today\'s tasks', error });
   }
 });
 
@@ -126,9 +137,9 @@ router.get('/:id', async (req, res) => {
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
-    res.json(task);
+    return res.json(task);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching task details', error });
+    return res.status(500).json({ message: 'Error fetching task details', error });
   }
 });
 
@@ -163,9 +174,9 @@ router.put('/:id', async (req, res) => {
     if (!updatedTask) {
       return res.status(404).json({ message: 'Task not found' });
     }
-    res.json(updatedTask);
+    return res.json(updatedTask);
   } catch (error) {
-    res.status(400).json({ message: 'Error updating task', error });
+    return res.status(400).json({ message: 'Error updating task', error });
   }
 });
 
@@ -184,9 +195,9 @@ router.patch('/:id/subtasks/:subtaskId', async (req, res) => {
     Object.assign(subtask, req.body);
     await task.save();
 
-    res.json(task);
+    return res.json(task);
   } catch (error) {
-    res.status(400).json({ message: 'Error updating subtask', error });
+    return res.status(400).json({ message: 'Error updating subtask', error });
   }
 });
 
@@ -197,9 +208,9 @@ router.delete('/:id', async (req, res) => {
     if (!deletedTask) {
       return res.status(404).json({ message: 'Task not found' });
     }
-    res.json({ message: 'Task deleted successfully' });
+    return res.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    res.status(400).json({ message: 'Error deleting task', error });
+    return res.status(400).json({ message: 'Error deleting task', error });
   }
 });
 

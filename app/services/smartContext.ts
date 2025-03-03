@@ -7,7 +7,7 @@ import { getCurrentWeather, WeatherData } from './weatherService';
 
 // Configuration
 const CONFIG = {
-  ENABLE_OPENAI: true, // Switch to enable/disable OpenAI API calls
+  ENABLE_OPENAI: false, // Switch to enable/disable OpenAI API calls
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
 };
 

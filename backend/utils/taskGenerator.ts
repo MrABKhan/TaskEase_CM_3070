@@ -115,39 +115,123 @@ const weekendTasks: Array<Omit<Task, 'date' | 'startTime' | 'endTime'>> = [
 ];
 
 const timeSlots = [
-  { start: '09:00 AM', end: '11:00 AM' },
-  { start: '11:30 AM', end: '01:30 PM' },
-  { start: '02:00 PM', end: '04:00 PM' },
-  { start: '04:30 PM', end: '06:30 PM' }
+  { start: '09:00', end: '12:00' },  // Morning
+  { start: '13:00', end: '16:00' },  // Afternoon
+  { start: '16:00', end: '19:00' }   // Evening
 ];
+
+// Helper function to get a time-based completion multiplier
+const getTimeBasedMultiplier = (timeSlot: { start: string; end: string }): number => {
+  const hour = parseInt(timeSlot.start);
+  // Higher completion rates during morning and early afternoon
+  if (hour >= 9 && hour < 12) return 1.2;  // Morning peak
+  if (hour >= 13 && hour < 16) return 1.0;  // Afternoon
+  return 0.8;  // Evening
+};
+
+// Helper function to determine if we should create a task for this slot
+const shouldCreateTask = (date: Date, timeSlot: { start: string; end: string }): boolean => {
+  const dayOfWeek = format(date, 'EEEE');
+  const hour = parseInt(timeSlot.start);
+  const isWeekendDay = isWeekend(date);
+
+  // Reduce task frequency for weekends
+  if (isWeekendDay && Math.random() > 0.6) return false;
+
+  // Reduce late tasks
+  if (hour >= 16 && Math.random() > 0.7) return false;
+
+  // General task probability
+  return Math.random() > 0.4; // 60% chance of task creation
+};
+
+// Helper function to determine if a task should be completed
+const shouldCompleteTask = (date: Date, baseCompletionRate: number, timeSlot: { start: string; end: string }): boolean => {
+  // Future tasks should never be completed
+  if (date > new Date()) {
+    return false;
+  }
+
+  const dayDiff = Math.floor((new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // For the last 14 days, use varying completion rates
+  if (dayDiff <= 14) {
+    const dayPatterns: Record<number, number> = {
+      1: 0.8,  // Yesterday
+      2: 0.7,
+      3: 0.75,
+      4: 0.6,
+      5: 0.65,
+      6: 0.7,
+      7: 0.8,  // Last week same day
+      8: 0.6,
+      9: 0.65,
+      10: 0.7,
+      11: 0.75,
+      12: 0.6,
+      13: 0.65,
+      14: 0.7
+    };
+    
+    const dayMultiplier = dayPatterns[dayDiff] || 0.6;
+    const timeMultiplier = getTimeBasedMultiplier(timeSlot);
+    return Math.random() < (baseCompletionRate * dayMultiplier * timeMultiplier);
+  }
+  
+  // For older tasks, use a sparse completion pattern
+  const sparseCompletionRate = baseCompletionRate * 0.3;
+  const timeMultiplier = getTimeBasedMultiplier(timeSlot);
+  return Math.random() < (sparseCompletionRate * timeMultiplier);
+};
 
 export function generateYearOfTasks(): Task[] {
   const tasks: Task[] = [];
-  const startDate = startOfDay(new Date());
-  const numberOfDays = 365;
+  const today = startOfDay(new Date());
+  const startDate = addMonths(today, -12);
+  const endDate = addMonths(today, 2);
+  const totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  for (let i = 0; i < numberOfDays; i++) {
+  // Generate tasks for each day
+  for (let i = 0; i < totalDays; i++) {
     const currentDate = addDays(startDate, i);
     const isWeekendDay = isWeekend(currentDate);
     const tasksForDay = isWeekendDay ? weekendTasks : weekdayTasks;
     
-    // Generate 2-3 tasks per day
-    const numberOfTasksToday = Math.random() > 0.5 ? 3 : 2;
-    const shuffledTimeSlots = [...timeSlots].sort(() => Math.random() - 0.5);
-    
-    for (let j = 0; j < numberOfTasksToday; j++) {
-      const taskTemplate = tasksForDay[j % tasksForDay.length];
-      const timeSlot = shuffledTimeSlots[j];
+    // Try to create one task per time slot
+    timeSlots.forEach(timeSlot => {
+      // Only create a task sometimes
+      if (!shouldCreateTask(currentDate, timeSlot)) {
+        return;
+      }
+
+      // Pick a random task template, but avoid duplicates for the same day
+      const availableTemplates = [...tasksForDay];
+      const taskTemplate = availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
       
+      // Base completion rate varies by priority
+      const baseCompletionRate = 
+        taskTemplate.priority === 'high' ? 0.85 :
+        taskTemplate.priority === 'medium' ? 0.7 : 0.5;
+
+      // Determine if this task should be marked as completed
+      const completed = shouldCompleteTask(currentDate, baseCompletionRate, timeSlot);
+      
+      // For completed tasks, also complete some subtasks
+      const subtasks = taskTemplate.subtasks.map(subtask => ({
+        ...subtask,
+        completed: completed && Math.random() < 0.8
+      }));
+
       tasks.push({
         ...taskTemplate,
         date: currentDate,
         startTime: timeSlot.start,
         endTime: timeSlot.end,
-        // Add a date identifier to make titles unique
+        completed,
+        subtasks,
         title: `${taskTemplate.title} - ${format(currentDate, 'MMM d')}`
       });
-    }
+    });
   }
 
   return tasks;

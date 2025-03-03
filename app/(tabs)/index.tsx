@@ -1,25 +1,16 @@
+import React from 'react';
 import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { Text, Surface, Button, List, IconButton, ActivityIndicator } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
+import api, { ActivityMetrics, Task } from '../services/api';
 import { generateSmartContext } from '../services/smartContext';
 import TaskList from '../components/TaskList';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
 type Priority = 'high' | 'medium' | 'low';
-
-interface Task {
-  id: string;
-  title: string;
-  category: Category;
-  priority: Priority;
-  startTime: string;
-  endTime: string;
-  completed: boolean;
-}
 
 interface SmartContext {
   weather: {
@@ -69,10 +60,13 @@ export default function TabOneScreen() {
     timestamp: new Date().toISOString(),
     lastUpdated: "00:00",
   });
+  const [activityMetrics, setActivityMetrics] = useState<ActivityMetrics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadTasks();
+      loadAnalytics();
     }, [])
   );
 
@@ -111,6 +105,20 @@ export default function TabOneScreen() {
       setLoading(false);
       setContextLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      console.log('[Analytics] Loading activity metrics...');
+      setAnalyticsLoading(true);
+      const metrics = await api.getActivityAnalytics();
+      setActivityMetrics(metrics);
+      console.log('[Analytics] Activity metrics loaded:', metrics);
+    } catch (error) {
+      console.error('[Analytics] Error loading activity metrics:', error);
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -454,53 +462,44 @@ export default function TabOneScreen() {
               <View style={styles.activityContainer}>
                 {/* Time Period Labels */}
                 <View style={styles.timePeriodLabels}>
-                  <Text style={styles.timeLabel}>6AM</Text>
-                  <Text style={styles.timeLabel}>9AM</Text>
-                  <Text style={styles.timeLabel}>12PM</Text>
-                  <Text style={styles.timeLabel}>3PM</Text>
-                  <Text style={styles.timeLabel}>6PM</Text>
-                  <Text style={styles.timeLabel}>9PM</Text>
+                  {activityMetrics?.dailyActivity[0]?.timeSlots.map(slot => (
+                    <Text key={slot.slot} style={styles.timeLabel}>
+                      {slot.slot.split('-')[0]}
+                    </Text>
+                  ))}
                 </View>
 
                 <View style={styles.graphContainer}>
                   {/* Day Labels and Activity Grid */}
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, dayIndex) => (
-                    <View key={day} style={styles.dayRow}>
-                      <Text style={styles.dayLabel}>{day}</Text>
+                  {activityMetrics?.dailyActivity.slice(-5).map((day, dayIndex) => (
+                    <View key={day.date} style={styles.dayRow}>
+                      <Text style={styles.dayLabel}>
+                        {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                      </Text>
                       <View style={styles.activityRow}>
-                        {[...Array(6)].map((_, timeIndex) => {
-                          const intensity = Math.random(); // In real app, this would be actual activity data
-                          const activityLevel = intensity > 0.7 
-                            ? 'High'
-                            : intensity > 0.4 
-                              ? 'Medium'
-                              : intensity > 0.1 
-                                ? 'Low'
-                                : 'None';
-                          return (
-                            <Pressable
-                              key={timeIndex}
-                              onPress={() => {
-                                console.log(`${day}, Period ${timeIndex + 1}: ${activityLevel} activity`);
-                              }}
-                            >
-                              <View
-                                style={[
-                                  styles.activityCell,
-                                  {
-                                    backgroundColor: intensity > 0.7 
-                                      ? '#30D158' 
-                                      : intensity > 0.4 
-                                        ? '#63DA82' 
-                                        : intensity > 0.1 
-                                          ? '#96E4AB' 
-                                          : '#E3E3E3'
-                                  }
-                                ]}
-                              />
-                            </Pressable>
-                          );
-                        })}
+                        {day.timeSlots.map((slot, timeIndex) => (
+                          <Pressable
+                            key={timeIndex}
+                            onPress={() => {
+                              console.log(`${day.date}, ${slot.slot}: ${slot.tasksCount} tasks, ${slot.completedCount} completed`);
+                            }}
+                          >
+                            <View
+                              style={[
+                                styles.activityCell,
+                                {
+                                  backgroundColor: slot.intensity === 0
+                                    ? '#E3E3E3'
+                                    : slot.intensity <= 0.3
+                                      ? '#96E4AB'
+                                      : slot.intensity <= 0.7
+                                        ? '#63DA82'
+                                        : '#30D158'
+                              }
+                            ]}
+                          />
+                          </Pressable>
+                        ))}
                       </View>
                     </View>
                   ))}
@@ -520,36 +519,64 @@ export default function TabOneScreen() {
                 </View>
 
                 <View style={styles.productivityInsights}>
-                  <View style={styles.productivityInsight}>
-                    <MaterialCommunityIcons name="clock-outline" size={20} color="#666" style={styles.insightIcon} />
-                    <View style={styles.insightContent}>
-                      <Text style={styles.insightLabel}>Most Productive Time</Text>
-                      <Text style={styles.insightValue}>Morning (9:00 - 11:00 AM)</Text>
+                  {activityMetrics?.mostProductiveTime && (
+                    <View style={styles.productivityInsight}>
+                      <MaterialCommunityIcons name="clock-outline" size={20} color="#666" style={styles.insightIcon} />
+                      <View style={styles.insightContent}>
+                        <Text style={styles.insightLabel}>Most Productive Time</Text>
+                        <Text style={styles.insightValue}>
+                          {activityMetrics.mostProductiveTime.slot}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.productivityInsight}>
-                    <MaterialCommunityIcons name="calendar" size={20} color="#666" style={styles.insightIcon} />
-                    <View style={styles.insightContent}>
-                      <Text style={styles.insightLabel}>Most Productive Day</Text>
-                      <Text style={styles.insightValue}>Tuesday (90% completion)</Text>
+                  )}
+                  {activityMetrics?.mostProductiveDay && (
+                    <View style={styles.productivityInsight}>
+                      <MaterialCommunityIcons name="calendar" size={20} color="#666" style={styles.insightIcon} />
+                      <View style={styles.insightContent}>
+                        <Text style={styles.insightLabel}>Most Productive Day</Text>
+                        <Text style={styles.insightValue}>
+                          {activityMetrics.mostProductiveDay.day} 
+                        </Text>
+                      </View>
                     </View>
-                  </View>
+                  )}
                 </View>
 
-                <View style={styles.activityStats}>
-                  <View style={styles.activityStat}>
-                    <Text style={styles.activityStatValue}>{analyticsData.weeklyCompletion}%</Text>
-                    <Text style={styles.activityStatLabel}>Completion Rate</Text>
+                {analyticsLoading ? (
+                  <ActivityIndicator style={{ marginTop: 16 }} />
+                ) : (
+                  <View style={styles.activityStats}>
+                    <View style={styles.activityStat}>
+                      <Text style={styles.activityStatValue}>
+                        {activityMetrics?.dailyActivity.reduce((sum, day) => 
+                          sum + day.timeSlots.reduce((s, slot) => s + slot.completedCount, 0), 0) ?? 0}
+                      </Text>
+                      <Text style={styles.activityStatLabel}>Tasks Completed</Text>
+                    </View>
+                    <View style={styles.activityStat}>
+                      <Text style={styles.activityStatValue}>
+                        {activityMetrics?.dailyActivity.reduce((sum, day) => 
+                          sum + day.timeSlots.reduce((s, slot) => s + slot.tasksCount, 0), 0) ?? 0}
+                      </Text>
+                      <Text style={styles.activityStatLabel}>Total Tasks</Text>
+                    </View>
+                    <View style={styles.activityStat}>
+                      <Text style={styles.activityStatValue}>
+                        {(() => {
+                          if (!activityMetrics) return '0%';
+                          const totalTasks = activityMetrics.dailyActivity.reduce((sum, day) => 
+                            sum + day.timeSlots.reduce((s, slot) => s + slot.tasksCount, 0), 0);
+                          if (totalTasks === 0) return '0%';
+                          const completedTasks = activityMetrics.dailyActivity.reduce((sum, day) => 
+                            sum + day.timeSlots.reduce((s, slot) => s + slot.completedCount, 0), 0);
+                          return `${Math.round((completedTasks / totalTasks) * 100)}%`;
+                        })()}
+                      </Text>
+                      <Text style={styles.activityStatLabel}>Completion Rate</Text>
+                    </View>
                   </View>
-                  <View style={styles.activityStat}>
-                    <Text style={styles.activityStatValue}>{analyticsData.focusSessionsWeek}</Text>
-                    <Text style={styles.activityStatLabel}>Focus Sessions</Text>
-                  </View>
-                  <View style={styles.activityStat}>
-                    <Text style={styles.activityStatValue}>{analyticsData.averageSessionLength}</Text>
-                    <Text style={styles.activityStatLabel}>Avg. Session</Text>
-                  </View>
-                </View>
+                )}
               </View>
             </View>
 
