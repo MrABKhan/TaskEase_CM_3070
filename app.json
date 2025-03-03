@@ -30,7 +30,9 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "package": "com.bakarkhan.TaskEase"
     },
@@ -54,7 +56,9 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow TaskEase to use your location to provide weather updates and location-based task suggestions.",
-          "locationWhenInUsePermission": "Allow TaskEase to use your location while the app is in use."
+          "locationWhenInUsePermission": "Allow TaskEase to use your location while the app is in use.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       "expo-font",

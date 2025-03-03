@@ -284,9 +284,15 @@ export default function TabOneScreen() {
           <View style={styles.statusBar}>
             <View style={styles.statusRow}>
               <View style={[styles.statusItem, styles.weatherItem]}>
-                <Text style={styles.statusIcon}>{contextData.weather.icon}</Text>
+                <Text style={[
+                  styles.statusIcon,
+                  contextData.weather.icon === '⚠️' && styles.errorIcon
+                ]}>{contextData.weather.icon}</Text>
                 <View>
-                  <Text style={styles.statusValue}>{contextData.weather.condition}</Text>
+                  <Text style={[
+                    styles.statusValue,
+                    contextData.weather.temp === 'N/A' && styles.errorText
+                  ]}>{contextData.weather.condition}</Text>
                   {contextData.weather.location ? (
                     <>
                       <Text style={styles.statusLabel} numberOfLines={1}>
@@ -297,7 +303,7 @@ export default function TabOneScreen() {
                       </Text>
                     </>
                   ) : (
-                    <Text style={styles.statusLabel}>Updating location...</Text>
+                    <Text style={[styles.statusLabel, styles.errorText]}>Location unavailable</Text>
                   )}
                 </View>
               </View>
@@ -1293,6 +1299,12 @@ const styles = StyleSheet.create({
   lastUpdated: {
     fontSize: 12,
     color: '#666',
+  },
+  errorIcon: {
+    color: '#FF453A',
+  },
+  errorText: {
+    color: '#FF453A',
   },
 });
 

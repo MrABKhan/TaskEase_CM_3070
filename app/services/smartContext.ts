@@ -263,14 +263,16 @@ const generateStaticSmartContext = async (
 
   // Use provided weather data with proper fallbacks and location
   const weather = {
-    icon: weatherData?.condition ? getWeatherIcon(weatherData.condition) : "🌤️",
+    icon: weatherData?.condition ? getWeatherIcon(weatherData.condition) : "⚠️",
     temp: weatherData?.temperature ? `${Math.round(weatherData.temperature)}°` : "N/A",
-    condition: weatherData?.condition || "Weather data unavailable",
+    condition: weatherData?.condition || "Weather unavailable",
     location: locationData ? 
       [locationData.city, locationData.country]
         .filter(Boolean)
         .join(', ') || 
-      `${locationData.latitude.toFixed(2)}, ${locationData.longitude.toFixed(2)}` : 
+      (locationData.latitude && locationData.longitude ? 
+        `${locationData.latitude.toFixed(2)}, ${locationData.longitude.toFixed(2)}` : 
+        undefined) : 
       undefined
   };
 
@@ -300,7 +302,8 @@ const generateStaticSmartContext = async (
 
 // Helper function to get weather icon
 const getWeatherIcon = (condition: string): string => {
-  const conditionLower = condition?.toLowerCase() || '';
+  if (!condition) return '⚠️'; // Red warning icon for unavailable data
+  const conditionLower = condition.toLowerCase();
   if (conditionLower.includes('rain')) return '🌧️';
   if (conditionLower.includes('cloud')) return '☁️';
   if (conditionLower.includes('sun') || conditionLower.includes('clear')) return '☀️';
