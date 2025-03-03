@@ -3,6 +3,7 @@ import { Task } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format, isWeekend, isBefore, addHours } from 'date-fns';
 import { getCurrentLocation, LocationData } from './locationService';
+import { getCurrentWeather, WeatherData } from './weatherService';
 
 // Configuration
 const CONFIG = {
@@ -16,12 +17,7 @@ const SMART_CONTEXT_TIMESTAMP_KEY = 'smartContextTimestamp';
 
 // Types for the smart context
 export interface SmartContext {
-  weather: {
-    icon: string;
-    temp: string;
-    condition: string;
-    location?: string;
-  };
+  weather: WeatherData;
   urgentTasks: {
     count: number;
     nextDue: string;
@@ -164,13 +160,23 @@ const formatTime = (date: Date): string => {
 // Function to generate static smart context based on tasks
 const generateStaticSmartContext = async (
   tasks: Task[],
-  weatherData: any
 ): Promise<SmartContext> => {
   const now = new Date();
   const currentHour = now.getHours();
   
   // Get location data
   const locationData = await getCurrentLocation();
+  
+  // Get weather data if location is available
+  let weatherData: WeatherData = {
+    icon: '⚠️',
+    temp: 'N/A',
+    condition: 'Weather unavailable'
+  };
+
+  if (locationData) {
+    weatherData = await getCurrentWeather(locationData);
+  }
   
   // Filter urgent and incomplete tasks - consider both high priority and timing
   const urgentTasks = tasks.filter(t => {
@@ -261,23 +267,8 @@ const generateStaticSmartContext = async (
     insight = `You're most productive with ${mostCommonCategory} tasks`;
   }
 
-  // Use provided weather data with proper fallbacks and location
-  const weather = {
-    icon: weatherData?.condition ? getWeatherIcon(weatherData.condition) : "⚠️",
-    temp: weatherData?.temperature ? `${Math.round(weatherData.temperature)}°` : "N/A",
-    condition: weatherData?.condition || "Weather unavailable",
-    location: locationData ? 
-      [locationData.city, locationData.country]
-        .filter(Boolean)
-        .join(', ') || 
-      (locationData.latitude && locationData.longitude ? 
-        `${locationData.latitude.toFixed(2)}, ${locationData.longitude.toFixed(2)}` : 
-        undefined) : 
-      undefined
-  };
-
   return {
-    weather,
+    weather: weatherData,
     urgentTasks: {
       count: urgentTasks.length,
       nextDue: urgentTasks.length > 0 
@@ -435,7 +426,7 @@ export const generateSmartContext = async (
       smartContext = await generateOpenAIContext(tasks, analyticsData, weatherData);
     } else {
       console.log('[SmartContext] Using static context generation');
-      smartContext = await generateStaticSmartContext(tasks, weatherData);
+      smartContext = await generateStaticSmartContext(tasks);
     }
 
     // Cache the new context
@@ -452,6 +443,6 @@ export const generateSmartContext = async (
     }
     
     // Return static context as fallback
-    return generateStaticSmartContext(tasks, weatherData);
+    return generateStaticSmartContext(tasks);
   }
 }; 
