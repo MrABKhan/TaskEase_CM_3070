@@ -7,7 +7,7 @@ import { getCurrentWeather, WeatherData } from './weatherService';
 
 // Configuration
 const CONFIG = {
-  ENABLE_OPENAI: false, // Switch to enable/disable OpenAI API calls
+  ENABLE_OPENAI: true, // Switch to enable/disable OpenAI API calls
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
 };
 
@@ -33,6 +33,16 @@ export interface SmartContext {
   timestamp: string;
   lastUpdated: string;
   location?: LocationData;
+  weatherImpact: {
+    outdoorSuitability: string;
+    healthConsiderations: string;
+    travelConsiderations: string;
+  };
+  locationContext: {
+    areaType: 'urban' | 'suburban' | 'rural';
+    transportRecommendation: string;
+    localTimeContext: string;
+  };
 }
 
 interface LLMResponse {
@@ -43,6 +53,8 @@ interface LLMResponse {
   suggestedActivity: string;
   nextBreak: string;
   insight: string;
+  weatherImpact: SmartContext['weatherImpact'];
+  locationContext: SmartContext['locationContext'];
 }
 
 // Initialize OpenAI client with fetch configuration for React Native
@@ -267,6 +279,25 @@ const generateStaticSmartContext = async (
     insight = `You're most productive with ${mostCommonCategory} tasks`;
   }
 
+  // Generate weather impact assessment
+  const weatherImpact = {
+    outdoorSuitability: weatherData.condition === 'Weather unavailable' 
+      ? 'Unable to assess outdoor conditions'
+      : getOutdoorSuitability(weatherData),
+    healthConsiderations: getHealthConsiderations(weatherData),
+    travelConsiderations: getTravelConsiderations(weatherData)
+  };
+
+  // Generate location context
+  const locationContext = {
+    areaType: determineAreaType(locationData || undefined),
+    transportRecommendation: getTransportRecommendation(locationData || undefined, weatherData),
+    localTimeContext: getLocalTimeContext(now, locationData || undefined)
+  };
+
+  // Adjust suggested activity based on weather and location
+  suggestedActivity = adjustActivityForWeather(suggestedActivity, weatherData, locationData || undefined);
+
   return {
     weather: weatherData,
     urgentTasks: {
@@ -287,7 +318,8 @@ const generateStaticSmartContext = async (
     insight,
     timestamp: now.toISOString(),
     lastUpdated: format(now, 'HH:mm'),
-    ...(locationData && { location: locationData })
+    weatherImpact,
+    locationContext
   };
 };
 
@@ -307,13 +339,43 @@ const getWeatherIcon = (condition: string): string => {
 const generateOpenAIContext = async (
   tasks: Task[],
   analyticsData: any,
-  weatherData: any
+  currentWeather: any
 ): Promise<SmartContext> => {
   const now = new Date();
   const currentTime = format(now, 'HH:mm');
   const currentDate = format(now, 'yyyy-MM-dd');
   const dayOfWeek = format(now, 'EEEE');
   const timeOfDay = now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening';
+
+  // Get location data
+  const locationData = await getCurrentLocation();
+  
+  // Get weather data if location is available
+  let weatherData: WeatherData = {
+    icon: '⚠️',
+    temp: 'N/A',
+    condition: 'Weather unavailable'
+  };
+
+  if (locationData) {
+    weatherData = await getCurrentWeather(locationData);
+  }
+
+  // Generate weather impact assessment
+  const weatherImpact = {
+    outdoorSuitability: weatherData.condition === 'Weather unavailable' 
+      ? 'Unable to assess outdoor conditions'
+      : getOutdoorSuitability(weatherData),
+    healthConsiderations: getHealthConsiderations(weatherData),
+    travelConsiderations: getTravelConsiderations(weatherData)
+  };
+
+  // Generate location context
+  const locationContext = {
+    areaType: determineAreaType(locationData || undefined),
+    transportRecommendation: getTransportRecommendation(locationData || undefined, weatherData),
+    localTimeContext: getLocalTimeContext(now, locationData || undefined)
+  };
 
   // Prepare the context data for the LLM
   const context = {
@@ -331,12 +393,15 @@ const generateOpenAIContext = async (
     })),
     analytics: analyticsData,
     weather: weatherData,
+    location: locationData || undefined,
+    weatherImpact,
+    locationContext
   };
 
   console.log('[SmartContext] Sending prompt to LLM...');
 
   // Create the prompt for the LLM
-  const prompt = `As an AI task assistant, analyze the following context and generate a smart, personalized summary:
+  const prompt = `As an AI task assistant, analyze the following context and generate a smart, personalized summary that considers weather and location factors:
 
 Current Time: ${context.currentTime}
 Current Date: ${context.currentDate}
@@ -348,6 +413,24 @@ Tasks: ${JSON.stringify(context.tasks, null, 2)}
 Analytics: ${JSON.stringify(context.analytics, null, 2)}
 
 Weather: ${JSON.stringify(context.weather, null, 2)}
+
+Location: ${JSON.stringify(context.location, null, 2)}
+
+Consider these factors in your analysis:
+1. Weather Impact:
+   - Suggest indoor/outdoor activities based on temperature and conditions
+   - Include health considerations (hydration, sun protection, etc.)
+   - Consider weather's effect on travel and task scheduling
+
+2. Location Context:
+   - Urban vs Rural considerations for transportation
+   - Local time context (business hours, daylight)
+   - Nearby amenities and their relevance to tasks
+
+3. Task Adaptations:
+   - Suggest alternative locations or timings based on weather
+   - Consider public transport vs personal vehicle based on location
+   - Account for local events or conditions that might affect tasks
 
 Generate a response in the following JSON format:
 {
@@ -365,9 +448,19 @@ Generate a response in the following JSON format:
     "timeLeft": "time until next break or task"
   },
   "energyLevel": "predicted energy level (high/medium/low) based on time and analytics",
-  "suggestedActivity": "recommended task type based on energy, time, and weather",
+  "suggestedActivity": "recommended task type based on energy, time, weather, and location",
   "nextBreak": "suggested next break time based on current schedule",
-  "insight": "one personalized productivity insight based on time, day, and analytics"
+  "insight": "personalized productivity insight considering weather and location",
+  "weatherImpact": {
+    "outdoorSuitability": "brief assessment of outdoor activity suitability",
+    "healthConsiderations": "relevant health advice based on weather",
+    "travelConsiderations": "how weather affects travel/commute"
+  },
+  "locationContext": {
+    "areaType": "urban/suburban/rural",
+    "transportRecommendation": "suggested transport method",
+    "localTimeContext": "relevant local timing considerations"
+  }
 }`;
 
   // Call the OpenAI API using the SDK
@@ -376,7 +469,7 @@ Generate a response in the following JSON format:
     messages: [
       {
         role: 'system',
-        content: 'You are a helpful AI task assistant that provides smart context for task management.',
+        content: 'You are a helpful AI task assistant that provides smart context for task management, considering weather and location factors.',
       },
       {
         role: 'user',
@@ -391,11 +484,15 @@ Generate a response in the following JSON format:
   // Parse and validate the LLM response
   const llmResponse: LLMResponse = JSON.parse(completion.choices[0].message.content || '{}');
 
-  // Create the final context with timestamps
+  // Create the final context with timestamps and location
   return {
     ...llmResponse,
     timestamp: now.toISOString(),
     lastUpdated: format(now, 'HH:mm'),
+    weather: weatherData,
+    weatherImpact,
+    locationContext,
+    ...(locationData && { location: locationData })
   };
 };
 
@@ -445,4 +542,95 @@ export const generateSmartContext = async (
     // Return static context as fallback
     return generateStaticSmartContext(tasks);
   }
+};
+
+// Helper functions for static context generation
+const getOutdoorSuitability = (weather: WeatherData): string => {
+  if (weather.condition === 'Weather unavailable') return 'Unable to assess';
+  
+  const temp = parseInt(weather.temp);
+  if (isNaN(temp)) return 'Temperature data unavailable';
+  
+  if (temp < 0) return 'Too cold for outdoor activities';
+  if (temp > 35) return 'Too hot for outdoor activities';
+  if (weather.condition.toLowerCase().includes('rain')) return 'Not suitable for outdoor activities due to rain';
+  if (weather.condition.toLowerCase().includes('storm')) return 'Outdoor activities not recommended due to storm';
+  
+  return 'Suitable for outdoor activities';
+};
+
+const getHealthConsiderations = (weather: WeatherData): string => {
+  if (weather.condition === 'Weather unavailable') return 'No specific health considerations available';
+  
+  const temp = parseInt(weather.temp);
+  if (isNaN(temp)) return 'Stay hydrated and dress appropriately';
+  
+  if (temp > 30) return 'Stay hydrated and protect from sun exposure';
+  if (temp < 5) return 'Dress warmly and protect from cold';
+  if (weather.condition.toLowerCase().includes('rain')) return 'Bring rain protection';
+  
+  return 'Normal conditions - maintain regular health practices';
+};
+
+const getTravelConsiderations = (weather: WeatherData): string => {
+  if (weather.condition === 'Weather unavailable') return 'Check local conditions before travel';
+  
+  if (weather.condition.toLowerCase().includes('rain')) return 'Allow extra time for travel due to rain';
+  if (weather.condition.toLowerCase().includes('storm')) return 'Consider postponing non-essential travel';
+  if (weather.condition.toLowerCase().includes('snow')) return 'Check road conditions before travel';
+  
+  return 'Normal travel conditions';
+};
+
+const determineAreaType = (location?: LocationData): 'urban' | 'suburban' | 'rural' => {
+  if (!location) return 'urban'; // Default to urban if no location data
+  
+  // This is a simple heuristic - in a real app, you'd use more sophisticated geo data
+  if (location.city) return 'urban';
+  return 'rural';
+};
+
+const getTransportRecommendation = (location?: LocationData, weather?: WeatherData): string => {
+  if (!location) return 'Unable to provide transport recommendations';
+  
+  const areaType = determineAreaType(location);
+  const badWeather = weather?.condition.toLowerCase().includes('rain') || 
+                     weather?.condition.toLowerCase().includes('storm') ||
+                     weather?.condition.toLowerCase().includes('snow');
+  
+  if (areaType === 'urban' && !badWeather) return 'Consider public transport or walking';
+  if (areaType === 'urban' && badWeather) return 'Use public transport or ride-sharing';
+  return 'Personal vehicle recommended';
+};
+
+const getLocalTimeContext = (now: Date, location?: LocationData): string => {
+  if (!location) return 'Check local business hours';
+  
+  const hour = now.getHours();
+  if (hour < 9 || hour > 17) return 'Outside standard business hours';
+  if (hour < 12) return 'Morning business hours';
+  return 'Afternoon business hours';
+};
+
+const adjustActivityForWeather = (
+  activity: string,
+  weather: WeatherData,
+  location?: LocationData
+): string => {
+  if (weather.condition === 'Weather unavailable') return activity;
+  
+  const isOutdoorActivity = activity.toLowerCase().includes('outdoor') ||
+                           activity.toLowerCase().includes('walk') ||
+                           activity.toLowerCase().includes('exercise');
+  
+  if (isOutdoorActivity) {
+    if (weather.condition.toLowerCase().includes('rain')) {
+      return 'Consider indoor alternatives: ' + activity;
+    }
+    if (weather.condition.toLowerCase().includes('storm')) {
+      return 'Move outdoor activities indoors due to weather';
+    }
+  }
+  
+  return activity;
 }; 
