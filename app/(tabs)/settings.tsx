@@ -1,14 +1,29 @@
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, Alert } from 'react-native';
 import { Text, List, Switch, Divider } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CONFIG, initializeConfig } from '../services/smartContext';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [soundEffects, setSoundEffects] = useState(true);
   const [autoBreaks, setAutoBreaks] = useState(false);
+  const [configInitialized, setConfigInitialized] = useState(false);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      await initializeConfig();
+      setConfigInitialized(true);
+    };
+    loadConfig();
+  }, []);
+
+  if (!configInitialized) {
+    return null; // or a loading indicator
+  }
 
   return (
     <View style={styles.container}>
@@ -27,6 +42,60 @@ export default function SettingsScreen() {
         {/* General Settings */}
         <List.Section>
           <List.Subheader style={styles.sectionHeader}>General</List.Subheader>
+          <List.Item
+            title="Enable OpenAI"
+            description="Use AI for smarter context generation"
+            left={props => <List.Icon {...props} icon="brain" />}
+            right={() => (
+              <Switch
+                value={CONFIG.ENABLE_OPENAI}
+                onValueChange={async (value) => {
+                  await AsyncStorage.setItem('ENABLE_OPENAI', value.toString());
+                  CONFIG.ENABLE_OPENAI = value;
+                }}
+                color="#000"
+              />
+            )}
+          />
+          <List.Item
+            title="Cache Duration"
+            description={`Current: ${CONFIG.CACHE_DURATION / (60 * 1000)} minutes`}
+            left={props => <List.Icon {...props} icon="timer-cog-outline" />}
+            onPress={() => {
+              // Show dialog to change cache duration
+              Alert.alert(
+                'Cache Duration',
+                'Set how long to cache smart context data',
+                [
+                  {
+                    text: '1 minute',
+                    onPress: async () => {
+                      await AsyncStorage.setItem('CACHE_DURATION', (1 * 60 * 1000).toString());
+                      CONFIG.CACHE_DURATION = 1 * 60 * 1000;
+                    }
+                  },
+                  {
+                    text: '5 minutes',
+                    onPress: async () => {
+                      await AsyncStorage.setItem('CACHE_DURATION', (5 * 60 * 1000).toString());
+                      CONFIG.CACHE_DURATION = 5 * 60 * 1000;
+                    }
+                  },
+                  {
+                    text: '15 minutes',
+                    onPress: async () => {
+                      await AsyncStorage.setItem('CACHE_DURATION', (15 * 60 * 1000).toString());
+                      CONFIG.CACHE_DURATION = 15 * 60 * 1000;
+                    }
+                  },
+                  {
+                    text: 'Cancel',
+                    style: 'cancel'
+                  }
+                ]
+              );
+            }}
+          />
           <List.Item
             title="Notifications"
             left={props => <List.Icon {...props} icon="bell-outline" />}

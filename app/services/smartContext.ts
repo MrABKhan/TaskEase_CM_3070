@@ -6,9 +6,26 @@ import { getCurrentLocation, LocationData } from './locationService';
 import { getCurrentWeather, WeatherData } from './weatherService';
 
 // Configuration
-const CONFIG = {
+export const CONFIG = {
   ENABLE_OPENAI: false, // Switch to enable/disable OpenAI API calls
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes in milliseconds
+};
+
+// Initialize CONFIG from AsyncStorage
+export const initializeConfig = async () => {
+  try {
+    const storedEnableOpenAI = await AsyncStorage.getItem('ENABLE_OPENAI');
+    const storedCacheDuration = await AsyncStorage.getItem('CACHE_DURATION');
+
+    if (storedEnableOpenAI !== null) {
+      CONFIG.ENABLE_OPENAI = storedEnableOpenAI === 'true';
+    }
+    if (storedCacheDuration !== null) {
+      CONFIG.CACHE_DURATION = parseInt(storedCacheDuration, 10);
+    }
+  } catch (error) {
+    console.error('[SmartContext] Error initializing config:', error);
+  }
 };
 
 // Cache keys
