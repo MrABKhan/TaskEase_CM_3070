@@ -318,57 +318,6 @@ export default function AnalyticsScreen() {
               </View>
             </View>
 
-            {/* Personalization Insights */}
-            <View style={styles.analyticsCard}>
-              <Text style={styles.analyticsTitle}>Personal Insights</Text>
-              <View style={styles.insightsContainer}>
-                <View style={[styles.insightMetric, styles.metricCard]}>
-                  <View style={[styles.insightIconContainer, { backgroundColor: '#6366F115' }]}>
-                    <MaterialCommunityIcons name="lightbulb-outline" size={20} color="#6366F1" />
-                  </View>
-                  <View style={styles.insightContentWrapper}>
-                    <Text style={[styles.insightTitle, { color: '#6366F1' }]}>Energy Pattern</Text>
-                    <Text style={styles.insightText}>Your peak productivity occurs during</Text>
-                    <View style={styles.insightMetricContainer}>
-                      <Text style={[styles.insightMetricValue, { color: '#6366F1' }]}>9-11 AM</Text>
-                      <Text style={styles.insightMetricLabel}>(Morning)</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.insightMetric, styles.metricCard]}>
-                  <View style={[styles.insightIconContainer, { backgroundColor: '#EC489915' }]}>
-                    <MaterialCommunityIcons name="chart-bell-curve" size={20} color="#EC4899" />
-                  </View>
-                  <View style={styles.insightContentWrapper}>
-                    <Text style={[styles.insightTitle, { color: '#EC4899' }]}>Task Load Analysis</Text>
-                    <Text style={styles.insightText}>Best performance early in the week</Text>
-                    <View style={styles.insightMetricContainer}>
-                      <View style={[styles.loadIndicator, { backgroundColor: '#EC489915' }]}>
-                        <Text style={[styles.loadText, { color: '#EC4899' }]}>Moderate Load</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={[styles.insightMetric, styles.metricCard]}>
-                  <View style={[styles.insightIconContainer, { backgroundColor: '#10B98115' }]}>
-                    <MaterialCommunityIcons name="trending-up" size={20} color="#10B981" />
-                  </View>
-                  <View style={styles.insightContentWrapper}>
-                    <Text style={[styles.insightTitle, { color: '#10B981' }]}>Focus Score Trend</Text>
-                    <Text style={styles.insightText}>Weekly improvement</Text>
-                    <View style={styles.insightMetricContainer}>
-                      <Text style={[styles.insightMetricValue, { color: '#10B981' }]}>+15%</Text>
-                      <View style={[styles.trendIndicator, { backgroundColor: '#10B98115' }]}>
-                        <MaterialCommunityIcons name="arrow-up" size={14} color="#10B981" />
-                        <Text style={[styles.trendText, { color: '#10B981' }]}>Improving</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </View>
           </View>
         </Surface>
       </ScrollView>
