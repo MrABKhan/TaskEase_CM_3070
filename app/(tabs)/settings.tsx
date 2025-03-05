@@ -1,4 +1,4 @@
-import { View, ScrollView, Alert } from 'react-native';
+import { View, ScrollView, Alert, Linking } from 'react-native';
 import { Text, List, Switch, Divider } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,9 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG, initializeConfig } from '../services/smartContext';
 
 export default function SettingsScreen() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [soundEffects, setSoundEffects] = useState(true);
-  const [autoBreaks, setAutoBreaks] = useState(false);
   const [configInitialized, setConfigInitialized] = useState(false);
 
   useEffect(() => {
@@ -94,75 +91,22 @@ export default function SettingsScreen() {
               );
             }}
           />
-          <List.Item
-            title="Dark Mode"
-            left={props => <List.Icon {...props} icon="theme-light-dark" />}
-            right={() => (
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-                color="#000"
-              />
-            )}
-          />
-          <List.Item
-            title="Sound Effects"
-            left={props => <List.Icon {...props} icon="volume-high" />}
-            right={() => (
-              <Switch
-                value={soundEffects}
-                onValueChange={setSoundEffects}
-                color="#000"
-              />
-            )}
-          />
         </List.Section>
 
         <Divider />
 
-        {/* Focus Settings */}
+        {/* About Section */}
         <List.Section>
-          <List.Subheader style={styles.sectionHeader}>Focus Mode</List.Subheader>
-          <List.Item
-            title="Focus Duration"
-            description="25 minutes"
-            left={props => <List.Icon {...props} icon="timer-outline" />}
-          />
-          <List.Item
-            title="Break Duration"
-            description="5 minutes"
-            left={props => <List.Icon {...props} icon="coffee-outline" />}
-          />
-          <List.Item
-            title="Auto Start Breaks"
-            left={props => <List.Icon {...props} icon="play-circle-outline" />}
-            right={() => (
-              <Switch
-                value={autoBreaks}
-                onValueChange={setAutoBreaks}
-                color="#000"
-              />
-            )}
-          />
-        </List.Section>
-
-        <Divider />
-
-        {/* Account Settings */}
-        <List.Section>
-          <List.Subheader style={styles.sectionHeader}>Account</List.Subheader>
-          <List.Item
-            title="Sync Data"
-            description="Last synced: Today 2:30 PM"
-            left={props => <List.Icon {...props} icon="sync" />}
-          />
-          <List.Item
-            title="Export Data"
-            left={props => <List.Icon {...props} icon="export" />}
-          />
+          <List.Subheader style={styles.sectionHeader}>About</List.Subheader>
           <List.Item
             title="Privacy Policy"
+            description="Learn how we handle your data"
             left={props => <List.Icon {...props} icon="shield-check-outline" />}
+            onPress={() => Alert.alert(
+              'Privacy Policy',
+              'TaskEase is committed to protecting your privacy. We do not collect or store any personal data. All your settings and focus session data are stored locally on your device. We use notifications only with your permission to enhance your focus experience. No data is shared with third parties.',
+              [{ text: 'OK', style: 'default' }]
+            )}
           />
         </List.Section>
       </ScrollView>

@@ -51,15 +51,15 @@ export function FocusMode({ style, className, ...props }: FocusModeProps) {
         <View className="flex-row justify-between">
           <View className="items-center">
             <ThemedText type="defaultSemiBold">25:00</ThemedText>
-            <Text className="text-text-light/70 dark:text-text-dark/70 text-sm">Duration</Text>
-          </View>
-          <View className="items-center">
-            <ThemedText type="defaultSemiBold">3</ThemedText>
-            <Text className="text-text-light/70 dark:text-text-dark/70 text-sm">Sessions</Text>
+            <Text className="text-text-light/70 dark:text-text-dark/70 text-sm">Focus</Text>
           </View>
           <View className="items-center">
             <ThemedText type="defaultSemiBold">5:00</ThemedText>
             <Text className="text-text-light/70 dark:text-text-dark/70 text-sm">Break</Text>
+          </View>
+          <View className="items-center">
+            <ThemedText type="defaultSemiBold">3</ThemedText>
+            <Text className="text-text-light/70 dark:text-text-dark/70 text-sm">Sessions</Text>
           </View>
         </View>
       </View>

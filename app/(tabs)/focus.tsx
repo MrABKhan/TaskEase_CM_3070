@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { scheduleNotification, initializeNotifications, cancelNotification } from '../services/notificationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
 export default function FocusScreen() {
   const [isActive, setIsActive] = useState(false);
-  const [time, setTime] = useState(25 * 60);
+  const [time, setTime] = useState(25 * 60); // 25 minutes in seconds
   const [isBreak, setIsBreak] = useState(false);
   const [endNotificationId, setEndNotificationId] = useState<string | null>(null);
   
@@ -189,7 +190,7 @@ export default function FocusScreen() {
   const setMode = async (mode: 'focus' | 'break') => {
     if (!isActive) {
       setIsBreak(mode === 'break');
-      setTime(mode === 'break' ? 5 * 60 : 25 * 60);
+      setTime(mode === 'break' ? 5 * 60 : 25 * 60); // 5 minutes for break, 25 minutes for focus
       if (endNotificationId) {
         cancelNotification(endNotificationId);
         setEndNotificationId(null);
