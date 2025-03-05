@@ -3,6 +3,7 @@ import { Text, IconButton } from 'react-native-paper';
 import { useState, useEffect, useRef } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle } from 'react-native-svg';
+import { scheduleNotification, initializeNotifications, cancelNotification } from '../services/notificationService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -10,6 +11,7 @@ export default function FocusScreen() {
   const [isActive, setIsActive] = useState(false);
   const [time, setTime] = useState(25 * 60);
   const [isBreak, setIsBreak] = useState(false);
+  const [endNotificationId, setEndNotificationId] = useState<string | null>(null);
   
   // Animation values for waves (focus mode)
   const animation1 = useRef(new Animated.Value(0)).current;
@@ -20,6 +22,11 @@ export default function FocusScreen() {
   const blob2Scale = useRef(new Animated.Value(1)).current;
   const blob1Position = useRef(new Animated.Value(0)).current;
   const blob2Position = useRef(new Animated.Value(0)).current;
+
+  // Initialize notifications when component mounts
+  useEffect(() => {
+    initializeNotifications();
+  }, []);
 
   useEffect(() => {
     if (!isBreak) {
@@ -137,8 +144,33 @@ export default function FocusScreen() {
     return () => clearInterval(interval);
   }, [isActive, time]);
 
-  const toggleTimer = () => {
-    setIsActive(!isActive);
+  const toggleTimer = async () => {
+    const newIsActive = !isActive;
+    setIsActive(newIsActive);
+    
+    if (newIsActive) {
+      // Starting timer
+      const sessionType = isBreak ? 'break' : 'focus';
+      await scheduleNotification(
+        `${sessionType.charAt(0).toUpperCase() + sessionType.slice(1)} Session Started`,
+        `Your ${sessionType} session has started. Stay focused!`
+      );
+      
+      // Schedule end notification
+      const notificationId = await scheduleNotification(
+        `${sessionType.charAt(0).toUpperCase() + sessionType.slice(1)} Session Complete`,
+        `Great job! Your ${time / 60} minute ${sessionType} session is complete.`,
+        time
+      );
+      
+      if (notificationId) {
+        setEndNotificationId(notificationId);
+      }
+    } else if (endNotificationId) {
+      // If stopping timer early, cancel the end notification
+      cancelNotification(endNotificationId);
+      setEndNotificationId(null);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -154,10 +186,14 @@ export default function FocusScreen() {
     }
   };
 
-  const setMode = (mode: 'focus' | 'break') => {
+  const setMode = async (mode: 'focus' | 'break') => {
     if (!isActive) {
       setIsBreak(mode === 'break');
       setTime(mode === 'break' ? 5 * 60 : 25 * 60);
+      if (endNotificationId) {
+        cancelNotification(endNotificationId);
+        setEndNotificationId(null);
+      }
     }
   };
 

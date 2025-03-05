@@ -7,7 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG, initializeConfig } from '../services/smartContext';
 
 export default function SettingsScreen() {
-  const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [soundEffects, setSoundEffects] = useState(true);
   const [autoBreaks, setAutoBreaks] = useState(false);
@@ -62,7 +61,6 @@ export default function SettingsScreen() {
             description={`Current: ${CONFIG.CACHE_DURATION / (60 * 1000)} minutes`}
             left={props => <List.Icon {...props} icon="timer-cog-outline" />}
             onPress={() => {
-              // Show dialog to change cache duration
               Alert.alert(
                 'Cache Duration',
                 'Set how long to cache smart context data',
@@ -95,17 +93,6 @@ export default function SettingsScreen() {
                 ]
               );
             }}
-          />
-          <List.Item
-            title="Notifications"
-            left={props => <List.Icon {...props} icon="bell-outline" />}
-            right={() => (
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                color="#000"
-              />
-            )}
           />
           <List.Item
             title="Dark Mode"
