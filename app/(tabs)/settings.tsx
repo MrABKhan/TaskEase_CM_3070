@@ -1,13 +1,17 @@
 import { View, ScrollView, Alert, Linking } from 'react-native';
-import { Text, List, Switch, Divider } from 'react-native-paper';
+import { Text, List, Switch, Divider, Button } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG, initializeConfig } from '../services/smartContext';
+import { useRouter } from 'expo-router';
+import auth from '../services/auth';
 
 export default function SettingsScreen() {
   const [configInitialized, setConfigInitialized] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -15,7 +19,31 @@ export default function SettingsScreen() {
       setConfigInitialized(true);
     };
     loadConfig();
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const userData = await auth.getUser();
+      if (userData) {
+        setUser({
+          name: userData.name,
+          email: userData.email,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await auth.signout();
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   if (!configInitialized) {
     return null; // or a loading indicator
@@ -27,10 +55,10 @@ export default function SettingsScreen() {
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>A</Text>
+            <Text style={styles.avatarText}>{user?.name?.[0] || 'U'}</Text>
           </View>
-          <Text style={styles.userName}>Alex Johnson</Text>
-          <Text style={styles.userEmail}>alex.johnson@example.com</Text>
+          <Text style={styles.userName}>{user?.name || 'User'}</Text>
+          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
         </View>
 
         <Divider />
@@ -109,6 +137,19 @@ export default function SettingsScreen() {
             )}
           />
         </List.Section>
+
+        {/* Account Section */}
+        <List.Section>
+          <List.Subheader style={styles.sectionHeader}>Account</List.Subheader>
+          <Button
+            mode="outlined"
+            onPress={handleSignOut}
+            style={styles.signOutButton}
+            textColor="#FF3B30"
+          >
+            Sign Out
+          </Button>
+        </List.Section>
       </ScrollView>
     </View>
   );
@@ -151,6 +192,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
     letterSpacing: 0.5,
+  },
+  signOutButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderColor: '#FF3B30',
   },
 });
 

@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
+import auth from './auth';
 
 // Debug logger utility
 const DEBUG = false; // Toggle this to enable/disable debug logs
@@ -108,26 +109,28 @@ const logAxiosError = (error: AxiosError) => {
   }
 };
 
+// Create axios instance with auth interceptor
+const axiosInstance = axios.create();
+axiosInstance.interceptors.request.use(async (config) => {
+  const headers = auth.getAuthHeader();
+  config.headers = { ...config.headers, ...headers };
+  return config;
+});
+
 const api = {
   // Get tasks with filtering
   getTasks: async (params: { month?: string; date?: string } = {}) => {
-    logger.info('📤 Fetching tasks with params:', { ...params, userId: TEMP_USER_ID });
+    logger.info('📤 Fetching tasks with params:', params);
     try {
       let response;
       if (params.month) {
         // Extract year and month from the month string (format: YYYY-MM)
         const [year, month] = params.month.split('-');
-        response = await axios.get(`${API_URL}/tasks/month/${year}/${month}`, {
-          params: { userId: TEMP_USER_ID }
-        });
+        response = await axiosInstance.get(`${API_URL}/tasks/month/${year}/${month}`);
       } else if (params.date) {
-        response = await axios.get(`${API_URL}/tasks/date/${params.date}`, {
-          params: { userId: TEMP_USER_ID }
-        });
+        response = await axiosInstance.get(`${API_URL}/tasks/date/${params.date}`);
       } else {
-        response = await axios.get(`${API_URL}/tasks`, {
-          params: { ...params, userId: TEMP_USER_ID }
-        });
+        response = await axiosInstance.get(`${API_URL}/tasks`, { params });
       }
 
       // Handle both array and object responses
@@ -166,7 +169,7 @@ const api = {
   getTodayTasks: async () => {
     logger.info('📤 Fetching today\'s tasks for user:', TEMP_USER_ID);
     try {
-      const response = await axios.get(`${API_URL}/tasks/today`, {
+      const response = await axiosInstance.get(`${API_URL}/tasks/today`, {
         params: { userId: TEMP_USER_ID }
       });
       logger.debug('📥 Raw today\'s tasks response:', response.data);
@@ -205,7 +208,7 @@ const api = {
   updateTask: async (id: string, updates: Partial<Task>) => {
     logger.info('📤 Updating task:', { id, updates });
     try {
-      const response = await axios.put(`${API_URL}/tasks/${id}`, updates);
+      const response = await axiosInstance.put(`${API_URL}/tasks/${id}`, updates);
       logger.debug('📥 Update task response:', response.data);
       return response.data;
     } catch (error) {
@@ -221,7 +224,7 @@ const api = {
   deleteTask: async (id: string) => {
     logger.info('📤 Deleting task:', id);
     try {
-      await axios.delete(`${API_URL}/tasks/${id}`);
+      await axiosInstance.delete(`${API_URL}/tasks/${id}`);
       logger.info('✅ Task deleted successfully');
     } catch (error) {
       if (error instanceof AxiosError) {
@@ -236,7 +239,7 @@ const api = {
   createTask: async (taskData: Partial<Task>) => {
     logger.info('📤 Creating new task:', taskData);
     try {
-      const response = await axios.post(`${API_URL}/tasks`, {
+      const response = await axiosInstance.post(`${API_URL}/tasks`, {
         ...taskData,
         userId: TEMP_USER_ID,
         notes: [],
@@ -261,7 +264,7 @@ const api = {
   getActivityAnalytics: async () => {
     logger.info('📤 Fetching activity analytics for user:', TEMP_USER_ID);
     try {
-      const response = await axios.get(`${API_URL}/analytics/activity`, {
+      const response = await axiosInstance.get(`${API_URL}/analytics/activity`, {
         params: { userId: TEMP_USER_ID }
       });
       logger.debug('📥 Activity analytics response:', response.data);
@@ -279,7 +282,7 @@ const api = {
   getWellnessMetrics: async () => {
     logger.info('📤 Fetching wellness metrics for user:', TEMP_USER_ID);
     try {
-      const response = await axios.get(`${API_URL}/analytics/wellness`, {
+      const response = await axiosInstance.get(`${API_URL}/analytics/wellness`, {
         params: { userId: TEMP_USER_ID }
       });
       logger.debug('📥 Wellness metrics response:', response.data);

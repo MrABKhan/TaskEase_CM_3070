@@ -4,6 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import taskRoutes from './routes/tasks';
 import analyticsRoutes from './routes/analytics';
+import authRoutes from './routes/auth';
+import { authMiddleware } from './middleware/auth';
 import Task from './models/Task';
 import { generateYearOfTasks } from './utils/taskGenerator';
 
@@ -16,13 +18,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use('/api/tasks', taskRoutes);
-app.use('/api/analytics', analyticsRoutes);
-// Add health check endpoint
+// Public routes
+app.use('/api/auth', authRoutes);
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+
+// Protected routes
+app.use('/api/tasks', authMiddleware, taskRoutes);
+app.use('/api/analytics', authMiddleware, analyticsRoutes);
 
 // Seed data function
 const seedDatabase = async () => {
