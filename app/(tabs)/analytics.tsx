@@ -282,35 +282,6 @@ export default function AnalyticsScreen() {
                       </View>
                     </View>
 
-                    {/* Break Compliance */}
-                    <View style={[styles.wellnessMetric, styles.metricCard]}>
-                      <View style={styles.wellnessHeader}>
-                        <MaterialCommunityIcons name="coffee" size={20} color="#F59E0B" />
-                        <Text style={styles.wellnessTitle}>Break Compliance</Text>
-                      </View>
-                      <View style={styles.breakProgress}>
-                        <Text style={styles.breakStats}>
-                          <Text style={[styles.breakHighlight, { color: '#F59E0B' }]}>
-                            {wellnessMetrics.breakCompliance.breaksTaken}/{wellnessMetrics.breakCompliance.breaksPlanned}
-                          </Text>
-                          <Text> suggested breaks taken</Text>
-                        </Text>
-                        <View style={styles.breakBar}>
-                          {[...Array(wellnessMetrics.breakCompliance.breaksPlanned)].map((_, index) => (
-                            <View
-                              key={index}
-                              style={[
-                                styles.breakDot,
-                                { backgroundColor: index < wellnessMetrics.breakCompliance.breaksTaken ? '#F59E0B' : '#F59E0B30' }
-                              ]}
-                            />
-                          ))}
-                        </View>
-                      </View>
-                      <Text style={styles.wellnessSubtext}>
-                        Average break duration: {wellnessMetrics.breakCompliance.averageDuration} minutes
-                      </Text>
-                    </View>
                   </>
                 ) : (
                   <Text style={styles.emptyText}>Unable to load wellness metrics</Text>

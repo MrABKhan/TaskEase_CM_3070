@@ -8,6 +8,8 @@ import authRoutes from './routes/auth';
 import { authMiddleware } from './middleware/auth';
 import Task from './models/Task';
 import { generateYearOfTasks } from './utils/taskGenerator';
+import User from './models/User';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -29,18 +31,23 @@ app.use('/api/tasks', authMiddleware, taskRoutes);
 app.use('/api/analytics', authMiddleware, analyticsRoutes);
 
 // Seed data function
-const seedDatabase = async () => {
+const createTestUser = async () => {
   try {
-    // Clear existing tasks
-    await Task.deleteMany({});
+    // Create or find a test user
+    const testUser = await User.findOneAndUpdate(
+      { email: 'test@testmail.com' },
+      {
+        name: 'Test User',
+        email: 'test@testmail.com',
+        password: 'test', // In a real app, this would be hashed
+        secretKey: crypto.randomBytes(32).toString('hex')
+      },
+      { upsert: true, new: true }
+    );
     
-    // Generate and insert a year of tasks
-    const yearOfTasks = generateYearOfTasks();
-    await Task.insertMany(yearOfTasks);
-    
-    console.log(`Database seeded successfully with ${yearOfTasks.length} tasks`);
+    console.log(`Test user created/updated successfully with ID: ${testUser._id}`);
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('Error creating test user:', error);
   }
 };
 
@@ -49,8 +56,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/taskmanag
   .then(async () => {
     console.log('Connected to MongoDB');
     
-    // Seed the database on every server start
-    await seedDatabase();
+    // Create test user on server start
+    await createTestUser();
   })
   .catch((error) => console.error('MongoDB connection error:', error));
 

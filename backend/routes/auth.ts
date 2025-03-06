@@ -1,13 +1,16 @@
 import express from 'express';
 import crypto from 'crypto';
 import User from '../models/User';
+import Task from '../models/Task';
+import { generateYearOfTasks } from '../utils/taskGenerator';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
 // Sign up
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, seedData = true } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -27,6 +30,18 @@ router.post('/signup', async (req, res) => {
     });
 
     await user.save();
+
+    // Generate and save initial tasks for the new user if seedData is true
+    if (seedData) {
+      try {
+        const yearOfTasks = generateYearOfTasks(user._id.toString());
+        await Task.insertMany(yearOfTasks);
+        console.log(`Generated ${yearOfTasks.length} initial tasks for new user ${user._id}`);
+      } catch (error) {
+        console.error('Error generating initial tasks:', error);
+        // Don't fail the signup if task generation fails
+      }
+    }
 
     // Return the secret key to the client
     res.status(201).json({
@@ -68,6 +83,21 @@ router.post('/signin', async (req, res) => {
   } catch (error) {
     console.error('Error in signin:', error);
     res.status(500).json({ message: 'Error signing in' });
+  }
+});
+
+// Reseed sample data
+router.post('/reseed', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+    const yearOfTasks = generateYearOfTasks(userId);
+    await Task.insertMany(yearOfTasks);
+    
+    console.log(`Generated ${yearOfTasks.length} sample tasks for user ${userId}`);
+    res.json({ message: 'Sample tasks generated successfully' });
+  } catch (error) {
+    console.error('Error reseeding tasks:', error);
+    res.status(500).json({ message: 'Error generating sample tasks' });
   }
 });
 

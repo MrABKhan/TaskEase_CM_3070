@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
+import { TextInput, Button, Text, Checkbox } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import auth from '../services/auth';
 
@@ -9,6 +9,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [seedData, setSeedData] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -28,7 +29,7 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      await auth.signup(email.trim(), password.trim(), name.trim());
+      await auth.signup(email.trim(), password.trim(), name.trim(), seedData);
       router.replace('/(tabs)'); // Navigate to main app
     } catch (error: any) {
       Alert.alert(
@@ -83,6 +84,17 @@ export default function SignupScreen() {
           style={styles.input}
           disabled={loading}
         />
+
+        <View style={styles.checkboxContainer}>
+          <Checkbox
+            status={seedData ? 'checked' : 'unchecked'}
+            onPress={() => setSeedData(!seedData)}
+            disabled={loading}
+          />
+          <Text style={styles.checkboxLabel}>
+            Generate sample tasks to help you get started
+          </Text>
+        </View>
         
         <Button
           mode="contained"
@@ -128,5 +140,14 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     marginTop: 16,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    flex: 1,
   },
 }); 

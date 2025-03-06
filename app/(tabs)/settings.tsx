@@ -7,15 +7,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CONFIG, initializeConfig } from '../services/smartContext';
 import { useRouter } from 'expo-router';
 import auth from '../services/auth';
+import { EventRegister } from 'react-native-event-listeners';
 
 export default function SettingsScreen() {
   const [configInitialized, setConfigInitialized] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [enableOpenAI, setEnableOpenAI] = useState(false);
+  const [cacheDuration, setCacheDuration] = useState(CONFIG.CACHE_DURATION);
   const router = useRouter();
 
   useEffect(() => {
     const loadConfig = async () => {
       await initializeConfig();
+      setEnableOpenAI(CONFIG.ENABLE_OPENAI);
+      setCacheDuration(CONFIG.CACHE_DURATION);
       setConfigInitialized(true);
     };
     loadConfig();
@@ -42,6 +47,28 @@ export default function SettingsScreen() {
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const handleOpenAIToggle = async (value: boolean) => {
+    try {
+      await AsyncStorage.setItem('ENABLE_OPENAI', value.toString());
+      CONFIG.ENABLE_OPENAI = value;
+      setEnableOpenAI(value);
+      EventRegister.emit('smartContextSettingsChanged', { type: 'openai', value });
+    } catch (error) {
+      console.error('Error updating OpenAI setting:', error);
+    }
+  };
+
+  const handleCacheDurationChange = async (duration: number) => {
+    try {
+      await AsyncStorage.setItem('CACHE_DURATION', duration.toString());
+      CONFIG.CACHE_DURATION = duration;
+      setCacheDuration(duration);
+      EventRegister.emit('smartContextSettingsChanged', { type: 'cacheDuration', value: duration });
+    } catch (error) {
+      console.error('Error updating cache duration:', error);
     }
   };
 
@@ -72,18 +99,15 @@ export default function SettingsScreen() {
             left={props => <List.Icon {...props} icon="brain" />}
             right={() => (
               <Switch
-                value={CONFIG.ENABLE_OPENAI}
-                onValueChange={async (value) => {
-                  await AsyncStorage.setItem('ENABLE_OPENAI', value.toString());
-                  CONFIG.ENABLE_OPENAI = value;
-                }}
+                value={enableOpenAI}
+                onValueChange={handleOpenAIToggle}
                 color="#000"
               />
             )}
           />
           <List.Item
             title="Cache Duration"
-            description={`Current: ${CONFIG.CACHE_DURATION / (60 * 1000)} minutes`}
+            description={`Current: ${cacheDuration / (60 * 1000)} minutes`}
             left={props => <List.Icon {...props} icon="timer-cog-outline" />}
             onPress={() => {
               Alert.alert(
@@ -92,28 +116,48 @@ export default function SettingsScreen() {
                 [
                   {
                     text: '1 minute',
-                    onPress: async () => {
-                      await AsyncStorage.setItem('CACHE_DURATION', (1 * 60 * 1000).toString());
-                      CONFIG.CACHE_DURATION = 1 * 60 * 1000;
-                    }
+                    onPress: () => handleCacheDurationChange(1 * 60 * 1000)
                   },
                   {
                     text: '5 minutes',
-                    onPress: async () => {
-                      await AsyncStorage.setItem('CACHE_DURATION', (5 * 60 * 1000).toString());
-                      CONFIG.CACHE_DURATION = 5 * 60 * 1000;
-                    }
+                    onPress: () => handleCacheDurationChange(5 * 60 * 1000)
                   },
                   {
                     text: '15 minutes',
-                    onPress: async () => {
-                      await AsyncStorage.setItem('CACHE_DURATION', (15 * 60 * 1000).toString());
-                      CONFIG.CACHE_DURATION = 15 * 60 * 1000;
-                    }
+                    onPress: () => handleCacheDurationChange(15 * 60 * 1000)
                   },
                   {
                     text: 'Cancel',
                     style: 'cancel'
+                  }
+                ]
+              );
+            }}
+          />
+          <List.Item
+            title="Reseed Sample Data"
+            description="Generate new sample tasks"
+            left={props => <List.Icon {...props} icon="refresh" />}
+            onPress={() => {
+              Alert.alert(
+                'Reseed Sample Data',
+                'This will generate new sample tasks. Your existing tasks will be preserved. Do you want to continue?',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel'
+                  },
+                  {
+                    text: 'Reseed',
+                    onPress: async () => {
+                      try {
+                        await auth.reseedData();
+                        Alert.alert('Success', 'Sample tasks have been regenerated successfully.');
+                      } catch (error) {
+                        console.error('Error reseeding data:', error);
+                        Alert.alert('Error', 'Failed to regenerate sample tasks. Please try again.');
+                      }
+                    }
                   }
                 ]
               );

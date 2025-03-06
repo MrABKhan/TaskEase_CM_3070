@@ -17,12 +17,13 @@ export interface User {
 class AuthService {
   private user: User | null = null;
 
-  async signup(email: string, password: string, name: string): Promise<User> {
+  async signup(email: string, password: string, name: string, seedData: boolean = true): Promise<User> {
     try {
       const response = await axios.post(`${API_URL}/auth/signup`, {
         email,
         password,
         name,
+        seedData,
       });
 
       const user = response.data;
@@ -73,6 +74,22 @@ class AuthService {
 
   getAuthHeader() {
     return this.user ? { 'x-secret-key': this.user.secretKey } : {};
+  }
+
+  async reseedData(): Promise<void> {
+    try {
+      const response = await axios.post(
+        `${API_URL}/auth/reseed`,
+        {},
+        { headers: this.getAuthHeader() }
+      );
+      if (response.status !== 200) {
+        throw new Error('Failed to reseed data');
+      }
+    } catch (error: any) {
+      console.error('Reseed error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Error reseeding data');
+    }
   }
 }
 

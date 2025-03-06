@@ -63,6 +63,7 @@ export interface SmartContext {
     transportRecommendation: string;
     localTimeContext: string;
   };
+  generationType: 'ai' | 'static';
 }
 
 interface LLMResponse {
@@ -361,7 +362,8 @@ const generateStaticSmartContext = async (
     timestamp: now.toISOString(),
     lastUpdated: format(now, 'HH:mm'),
     weatherImpact,
-    locationContext
+    locationContext,
+    generationType: 'static'
   };
 };
 
@@ -546,7 +548,8 @@ Generate a response in the following JSON format:
     weather: weatherData,
     weatherImpact,
     locationContext,
-    ...(locationData && { location: locationData })
+    ...(locationData && { location: locationData }),
+    generationType: 'ai'
   };
 };
 

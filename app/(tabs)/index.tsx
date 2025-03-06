@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
-import { Text, Surface, Button, List, IconButton, ActivityIndicator } from 'react-native-paper';
+import { View, ScrollView, Pressable, RefreshControl, TouchableOpacity } from 'react-native';
+import { Text, Surface, Button, List, IconButton, ActivityIndicator, Tooltip } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
@@ -8,6 +8,8 @@ import { useState, useEffect, useCallback } from 'react';
 import api, { ActivityMetrics, Task, WellnessMetrics } from '../services/api';
 import { generateSmartContext } from '../services/smartContext';
 import TaskList from '../components/TaskList';
+import { EventRegister } from 'react-native-event-listeners';
+import auth from '../services/auth';
 
 type Category = 'work' | 'health' | 'study' | 'leisure';
 type Priority = 'high' | 'medium' | 'low';
@@ -36,6 +38,7 @@ interface SmartContext {
   insight: string;
   timestamp: string;
   lastUpdated: string;
+  generationType: string;
 }
 
 export default function TabOneScreen() {
@@ -61,9 +64,11 @@ export default function TabOneScreen() {
     insight: "You're most productive in the mornings. Consider tackling the project proposal now.",
     timestamp: new Date().toISOString(),
     lastUpdated: "00:00",
+    generationType: 'static',
   });
   const [activityMetrics, setActivityMetrics] = useState<ActivityMetrics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [userName, setUserName] = useState<string>('');
 
   useFocusEffect(
     useCallback(() => {
@@ -72,6 +77,38 @@ export default function TabOneScreen() {
       loadWellnessMetrics();
     }, [])
   );
+
+  // Add event listener for settings changes
+  useEffect(() => {
+    const listener = EventRegister.addEventListener(
+      'smartContextSettingsChanged',
+      (data: { type: string; value: any }) => {
+        console.log('[SmartContext] Settings changed:', data);
+        // Reload smart context with force refresh
+        loadTasks(true);
+      }
+    );
+
+    return () => {
+      EventRegister.removeEventListener(listener as string);
+    };
+  }, []);
+
+  useEffect(() => {
+    const loadUserName = async () => {
+      try {
+        const userData = await auth.getUser();
+        if (userData?.name) {
+          // If name is longer than 20 characters, truncate it and add ...
+          setUserName(userData.name.length > 20 ? `${userData.name.substring(0, 17)}...` : userData.name);
+        }
+      } catch (error) {
+        console.error('[SmartContext] Error loading user name:', error);
+        setUserName('User');
+      }
+    };
+    loadUserName();
+  }, []);
 
   const loadTasks = async (forceRefresh: boolean = false) => {
     try {
@@ -200,7 +237,6 @@ export default function TabOneScreen() {
   };
 
   // Mock data - in real app this would come from AI analysis and user data
-  const userName = "Alex";
   const timeOfDay = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
 
   // Analytics mock data
@@ -296,6 +332,20 @@ export default function TabOneScreen() {
     }
   };
 
+  const getTimeEmoji = (hour: number) => {
+    if (hour < 12) return '🌅'; // Morning
+    if (hour < 17) return '☀️'; // Afternoon
+    return '🌙'; // Evening
+  };
+
+  const getGreeting = (name: string, timeOfDay: string) => {
+    const hour = new Date().getHours();
+    const emoji = getTimeEmoji(hour);
+    const firstName = name.split(' ')[0]; // Get first name
+    const displayName = firstName.length > 15 ? `${firstName.substring(0, 12)}...` : firstName;
+    return `Good ${timeOfDay}, ${displayName}! ${emoji}`;
+  };
+
   // Add logging for smart context data
   useEffect(() => {
     console.log('[SmartContext] Current Context:', {
@@ -331,96 +381,116 @@ export default function TabOneScreen() {
           <View style={styles.statusBar}>
             <View style={styles.statusRow}>
               <View style={[styles.statusItem, styles.weatherItem]}>
-                <Text style={[
-                  styles.statusIcon,
-                  contextData.weather.icon === '⚠️' && styles.errorIcon
-                ]}>{contextData.weather.icon}</Text>
-                <View>
-                  <Text style={[
-                    styles.statusValue,
-                    contextData.weather.temp === 'N/A' && styles.errorText
-                  ]}>{contextData.weather.condition}</Text>
-                  {contextData.weather.location ? (
-                    <>
-                      <Text style={styles.statusLabel} numberOfLines={1}>
-                        {contextData.weather.location.split(',')[0].trim()}
-                      </Text>
-                      <Text style={styles.statusLabel} numberOfLines={1}>
-                        {contextData.weather.location.split(',')[1]?.trim() || ''}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text style={[styles.statusLabel, styles.errorText]}>Location unavailable</Text>
-                  )}
-                </View>
+                {contextLoading ? (
+                  <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="small" color="#666" />
+                  </View>
+                ) : (
+                  <>
+                    <Text style={[
+                      styles.statusIcon,
+                      contextData.weather.icon === '⚠️' && styles.errorIcon
+                    ]}>{contextData.weather.icon}</Text>
+                    <View>
+                      <Text style={[
+                        styles.statusValue,
+                        contextData.weather.temp === 'N/A' && styles.errorText
+                      ]}>{contextData.weather.condition}</Text>
+                      {contextData.weather.location ? (
+                        <>
+                          <Text style={styles.statusLabel} numberOfLines={1}>
+                            {contextData.weather.location.split(',')[0].trim()}
+                          </Text>
+                          <Text style={styles.statusLabel} numberOfLines={1}>
+                            {contextData.weather.location.split(',')[1]?.trim() || ''}
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={[styles.statusLabel, styles.errorText]}>Location unavailable</Text>
+                      )}
+                    </View>
+                  </>
+                )}
               </View>
               <View style={[styles.statusItem, styles.urgentItem]}>
-                <Text style={styles.statusIcon}>🔥</Text>
-                <View>
-                  <Text style={styles.statusValue}>{contextData.urgentTasks.count} urgent</Text>
-                  <Text style={styles.statusLabel}>Next: {contextData.urgentTasks.nextDue}</Text>
-                </View>
+                {contextLoading ? (
+                  <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="small" color="#666" />
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.statusIcon}>🔥</Text>
+                    <View>
+                      <Text style={styles.statusValue}>{contextData.urgentTasks.count} urgent</Text>
+                      <Text style={styles.statusLabel}>Next: {contextData.urgentTasks.nextDue}</Text>
+                    </View>
+                  </>
+                )}
               </View>
             </View>
           </View>
 
           {/* Smart Context */}
-          <View style={styles.contextContainer}>
+          <View style={[
+            styles.contextContainer,
+            contextLoading && styles.contextContainerLoading
+          ]}>
             <View style={styles.contextHeader}>
-              <Text style={styles.greeting}>Good {timeOfDay}, {userName}! 👋</Text>
-              {contextLoading && (
-                <ActivityIndicator size="small" style={styles.contextLoader} />
-              )}
-            </View>
-            <View style={styles.insightContainer}>
-              <Text style={styles.insightText}>
-                <Text style={styles.focusState}>
-                  {contextData.focusStatus.state}
+              <View style={styles.greetingContainer}>
+                <Text style={styles.greeting}>
+                  {getGreeting(userName, timeOfDay)}
                 </Text>
-              </Text>
-              
-              <View style={styles.focusDetailsContainer}>
-                <Text style={styles.insightText}>
-                  🧠 {contextData.focusStatus.details}
-                </Text>
-                
-                <Text style={styles.insightText}>
-                  ✅ <Text style={styles.insightHighlight}>Recommendation: </Text>
-                  {contextData.focusStatus.recommendation}
-                </Text>
-                
-                <Text style={styles.insightText}>
-                  💡 {contextData.insight}
-                </Text>
-                
-                <Text style={styles.breakReminder}>
-                  ⏰ Next suggested break: {contextData.nextBreak}
-                </Text>
+                <TouchableOpacity>
+                  <Tooltip title={contextData.generationType === 'ai' ? 'AI-powered insights (OpenAI)' : 'Enable OpenAI in settings for AI-powered insights'}>
+                    <MaterialCommunityIcons
+                      name={contextData.generationType === 'ai' ? 'robot' : 'robot-off'}
+                      size={20}
+                      color={contextData.generationType === 'ai' ? '#007AFF' : '#666'}
+                      style={styles.generationIcon}
+                    />
+                  </Tooltip>
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
-
-          {/* Quick Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.stat}>
-              <MaterialCommunityIcons name="fire" size={24} color="#FF9500" />
-              <Text style={styles.statValue}>{quickStats.streak.value}</Text>
-              <Text style={styles.statLabel}>{quickStats.streak.label}</Text>
-            </View>
-            <View style={styles.stat}>
-              <MaterialCommunityIcons name="timer-outline" size={24} color="#000" />
-              <Text style={styles.statValue}>{quickStats.focusTime.value}</Text>
-              <Text style={styles.statLabel}>{quickStats.focusTime.label}</Text>
-            </View>
-            <View style={styles.stat}>
-              <MaterialCommunityIcons name="check-circle-outline" size={24} color="#4CAF50" />
-              <Text style={styles.statValue}>{quickStats.completion.value}</Text>
-              <Text style={styles.statLabel}>{quickStats.completion.label}</Text>
-            </View>
-            <View style={styles.stat}>
-              <MaterialCommunityIcons name="lightning-bolt" size={24} color="#FF9500" />
-              <Text style={styles.statValue}>{quickStats.energy.value}</Text>
-              <Text style={styles.statLabel}>{quickStats.energy.label}</Text>
+            <View style={[
+              styles.insightContainer,
+              contextLoading && styles.insightContainerLoading
+            ]}>
+              {contextLoading ? (
+                <View style={styles.insightLoaderContainer}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.loadingText}>
+                    {contextData.generationType === 'ai' ? 'Generating AI insights...' : 'Updating insights...'}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.insightText}>
+                    <Text style={styles.focusState}>
+                      {contextData.focusStatus.state}
+                    </Text>
+                  </Text>
+                  
+                  <View style={styles.focusDetailsContainer}>
+                    <Text style={styles.insightText}>
+                      🧠 {contextData.focusStatus.details}
+                    </Text>
+                    
+                    <Text style={styles.insightText}>
+                      ✅ <Text style={styles.insightHighlight}>Recommendation: </Text>
+                      {contextData.focusStatus.recommendation}
+                    </Text>
+                    
+                    <Text style={styles.insightText}>
+                      💡 {contextData.insight}
+                    </Text>
+                    
+                    <Text style={styles.breakReminder}>
+                      ⏰ Next suggested break: {contextData.nextBreak}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
 
@@ -526,6 +596,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9ff',
     padding: 16,
     borderRadius: 12,
+  },
+  greetingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   greeting: {
     fontSize: 24,
@@ -1146,6 +1221,43 @@ const styles = StyleSheet.create({
   },
   energyLevel: {
     fontWeight: 'bold',
+  },
+  generationIcon: {
+    marginLeft: 8,
+  },
+  contextContainerLoading: {
+    opacity: 0.7,
+  },
+  insightContainerLoading: {
+    opacity: 0.5,
+  },
+  contextLoaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#007AFF',
+    textAlign: 'center',
+  },
+  statusLoader: {
+    marginLeft: 8,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 60,
+  },
+  insightLoaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+    gap: 12,
   },
 });
 

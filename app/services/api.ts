@@ -22,8 +22,6 @@ const API_URL = Platform.select({
 
 logger.info('🌐 Using API URL:', API_URL);
 
-const TEMP_USER_ID = 'user123';
-
 export interface Task {
   id: string;
   title: string;
@@ -123,14 +121,25 @@ const api = {
     logger.info('📤 Fetching tasks with params:', params);
     try {
       let response;
+      const user = await auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       if (params.month) {
         // Extract year and month from the month string (format: YYYY-MM)
         const [year, month] = params.month.split('-');
-        response = await axiosInstance.get(`${API_URL}/tasks/month/${year}/${month}`);
+        response = await axiosInstance.get(`${API_URL}/tasks/month/${year}/${month}`, {
+          params: { userId: user.userId }
+        });
       } else if (params.date) {
-        response = await axiosInstance.get(`${API_URL}/tasks/date/${params.date}`);
+        response = await axiosInstance.get(`${API_URL}/tasks/date/${params.date}`, {
+          params: { userId: user.userId }
+        });
       } else {
-        response = await axiosInstance.get(`${API_URL}/tasks`, { params });
+        response = await axiosInstance.get(`${API_URL}/tasks`, { 
+          params: { ...params, userId: user.userId }
+        });
       }
 
       // Handle both array and object responses
@@ -167,10 +176,15 @@ const api = {
 
   // Get today's tasks
   getTodayTasks: async () => {
-    logger.info('📤 Fetching today\'s tasks for user:', TEMP_USER_ID);
     try {
+      const user = await auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      logger.info('📤 Fetching today\'s tasks for user:', user.userId);
+      
       const response = await axiosInstance.get(`${API_URL}/tasks/today`, {
-        params: { userId: TEMP_USER_ID }
+        params: { userId: user.userId }
       });
       logger.debug('📥 Raw today\'s tasks response:', response.data);
       
@@ -239,9 +253,14 @@ const api = {
   createTask: async (taskData: Partial<Task>) => {
     logger.info('📤 Creating new task:', taskData);
     try {
+      const user = await auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const response = await axiosInstance.post(`${API_URL}/tasks`, {
         ...taskData,
-        userId: TEMP_USER_ID,
+        userId: user.userId,
         notes: [],
         tags: [],
         isAiGenerated: taskData.isAiGenerated || false,
@@ -262,10 +281,15 @@ const api = {
   },
 
   getActivityAnalytics: async () => {
-    logger.info('📤 Fetching activity analytics for user:', TEMP_USER_ID);
     try {
+      const user = await auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      logger.info('📤 Fetching activity analytics for user:', user.userId);
+
       const response = await axiosInstance.get(`${API_URL}/analytics/activity`, {
-        params: { userId: TEMP_USER_ID }
+        params: { userId: user.userId }
       });
       logger.debug('📥 Activity analytics response:', response.data);
       return response.data as ActivityMetrics;
@@ -280,10 +304,15 @@ const api = {
   },
 
   getWellnessMetrics: async () => {
-    logger.info('📤 Fetching wellness metrics for user:', TEMP_USER_ID);
     try {
+      const user = await auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      logger.info('📤 Fetching wellness metrics for user:', user.userId);
+
       const response = await axiosInstance.get(`${API_URL}/analytics/wellness`, {
-        params: { userId: TEMP_USER_ID }
+        params: { userId: user.userId }
       });
       logger.debug('📥 Wellness metrics response:', response.data);
       return response.data as WellnessMetrics;
