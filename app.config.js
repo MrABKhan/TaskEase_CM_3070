@@ -4,7 +4,7 @@ module.exports = {
     slug: 'TaskEase',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/images/icon.png',
+    icon: './assets/images/task.png',
     scheme: 'myapp',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
@@ -16,13 +16,14 @@ module.exports = {
         NSMicrophoneUsageDescription: "TaskEase needs access to your microphone for voice input features.",
         NSSpeechRecognitionUsageDescription: "TaskEase needs access to speech recognition for voice input features.",
         ITSAppUsesNonExemptEncryption: false,
-        UIBackgroundModes: ["remote-notification"]
+        UIBackgroundModes: ["remote-notification"],
+        NSAppTransportSecurity: { NSAllowsArbitraryLoads: true }
       },
       bundleIdentifier: 'com.bakarkhan.TaskEase'
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/images/adaptive-icon.png',
+        foregroundImage: './assets/images/task.png',
         backgroundColor: '#ffffff'
       },
       permissions: [
@@ -52,7 +53,7 @@ module.exports = {
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -79,7 +80,18 @@ module.exports = {
       ],
       [
         "expo-notifications"
-      ]
+      ],
+      [
+        'expo-build-properties',
+        {
+          android: {
+            usesCleartextTraffic: true,
+          },
+          ios: {
+            flipper: true,
+          },
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true

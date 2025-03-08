@@ -64,7 +64,7 @@ Before you begin, ensure you have installed:
 
 4. Start the backend server:
    ```bash
-   npm run dev
+   docker compose up --build -d
    ```
 
 ### Docker Setup (Alternative)
@@ -104,20 +104,6 @@ taskease/
 └── docs/                # Documentation
 ```
 
-## API Documentation
-
-The backend API includes the following main endpoints:
-
-- `GET /api/tasks`: Get all tasks with filtering and pagination
-- `GET /api/tasks/:id`: Get a single task by ID
-- `POST /api/tasks`: Create a new task
-- `PUT /api/tasks/:id`: Update an existing task
-- `DELETE /api/tasks/:id`: Delete a task
-
-For detailed API documentation, run the backend server and visit:
-```
-http://localhost:3000/api-docs
-```
 
 ## API Configuration
 
@@ -133,7 +119,7 @@ The application supports three environments:
 1. Start the backend server locally:
    ```bash
    cd backend
-   npm run dev
+   docker compose up --build -d 
    ```
 
 2. The frontend will automatically use these API URLs in development:
@@ -141,6 +127,10 @@ The application supports three environments:
    - iOS Simulator/Web: `http://localhost:3000/api`
 
 ### Preview/Staging Deployment
+
+Please note currently all preview and internal applications are deployed to a 
+backend hosted on aws, and are pointing to it.
+
 
 1. Configure your staging API URL in `eas.json`:
    ```json
@@ -234,9 +224,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - MongoDB and Express.js communities
 - All contributors and supporters
 
-## Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
 
 ## Deployment
 
@@ -339,26 +326,3 @@ The frontend can be deployed using Expo Application Services (EAS):
    ```
 
 Note: This project cannot be deployed as an Expo Snack due to its complex architecture and backend dependencies.
-
-### Backend Deployment
-
-The backend can be deployed to any Node.js hosting service:
-
-1. Popular hosting options:
-   - Heroku
-   - DigitalOcean
-   - AWS Elastic Beanstalk
-   - Google Cloud Platform
-   - Microsoft Azure
-
-2. MongoDB hosting:
-   - MongoDB Atlas (recommended)
-   - Self-hosted MongoDB
-
-3. Environment setup:
-   ```bash
-   # Set these environment variables on your hosting platform
-   MONGODB_URI=your_mongodb_connection_string
-   PORT=3000
-   NODE_ENV=production
-   ```
