@@ -151,5 +151,5 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 .yarn.lock
-
+backend/yarn.lock
 # @end expo-cli
