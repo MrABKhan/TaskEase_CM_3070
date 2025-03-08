@@ -10,13 +10,10 @@ interface Config {
 const ENV = (process.env.EXPO_PUBLIC_ENV as Environment) || 'development';
 
 const getDefaultApiUrl = () => {
-  if (ENV === 'development') {
-    return Platform.select({
-      android: 'http://10.0.2.2:3000/api',
-      default: 'http://localhost:3000/api',
-    });
-  }
-  return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+  return process.env.EXPO_PUBLIC_API_URL || Platform.select({
+    android: 'http://10.0.2.2:3000/api',
+    default: 'http://localhost:3000/api',
+  });
 };
 
 const configs: Record<Environment, Config> = {

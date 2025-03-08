@@ -7,7 +7,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:3000/api",
+        "EXPO_PUBLIC_API_URL": "http://173.212.241.12:3000/api",
         "EXPO_PUBLIC_ENV": "development"
       },
       "android": {
@@ -30,7 +30,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://your-staging-api-url.com/api",
+        "EXPO_PUBLIC_API_URL": "http://173.212.241.12:3000/api",
         "EXPO_PUBLIC_ENV": "staging"
       }
     },
@@ -42,7 +42,7 @@
         "resourceClass": "m-medium"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://your-production-api-url.com/api",
+        "EXPO_PUBLIC_API_URL": "http://173.212.241.12:3000/api",
         "EXPO_PUBLIC_ENV": "production"
       }
     }
