@@ -326,3 +326,12 @@ The frontend can be deployed using Expo Application Services (EAS):
    ```
 
 Note: This project cannot be deployed as an Expo Snack due to its complex architecture and backend dependencies.
+
+
+### System logs
+While it's usually not necessary, if you want to see logs for everything happening on your device, for example, even the logs from other apps and the OS, you can use the following commands:
+
+```
+npx react-native log-android
+npx react-native log-ios
+```

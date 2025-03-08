@@ -103,7 +103,7 @@ module.exports = {
       eas: {
         projectId: "1186facd-c721-4645-ae2c-e0de94aefcdb"
       },
-      openWeatherMapApiKey: process.env.OPENWEATHERMAP_API_KEY,
+      openWeatherMapApiKey: "a8e0b63dd12ecf726228d09ac612a843",
     }
   }
 }; 
