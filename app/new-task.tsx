@@ -68,7 +68,7 @@ export default function NewTaskScreen() {
       case 'shopping':
         return 'cart-outline';
       case 'family':
-        return 'family-outline';
+        return 'account-group-outline';
       default:
         return 'tag-outline';
     }

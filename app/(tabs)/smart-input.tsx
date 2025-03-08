@@ -353,6 +353,7 @@ export default function SmartInputScreen() {
       
       // Create the task
       const newTask = await createTask(taskData);
+      console.log('[SmartInput] Task created:', newTask);
       
       // Show success message
       showSnackbar('Task created successfully!');
@@ -362,7 +363,16 @@ export default function SmartInputScreen() {
       
       // Navigate to the task detail screen after a short delay
       setTimeout(() => {
-        router.push(`/task-detail/${newTask.id}`);
+        // Check for either _id or id
+        const taskId = newTask._id || newTask.id;
+        if (taskId) {
+          console.log('[SmartInput] Navigating to task:', taskId);
+          router.push(`/task-detail/${taskId}`);
+        } else {
+          console.error('[SmartInput] Missing task ID for navigation');
+          showSnackbar('Task created but navigation failed');
+          router.back();
+        }
       }, 1500);
     } catch (error) {
       console.error('[SmartInput] Error processing transcript:', error);
@@ -388,7 +398,11 @@ export default function SmartInputScreen() {
         isAiGenerated: taskData.isAiGenerated || false,
       });
       
-      console.log('[SmartInput] Task created:', newTask);
+      // Ensure we have a valid task ID
+      if (!newTask.id && !newTask._id) {
+        throw new Error('No task ID returned from server');
+      }
+      
       return newTask;
     } catch (error) {
       console.error('[SmartInput] Error creating task:', error);

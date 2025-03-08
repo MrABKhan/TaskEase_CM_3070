@@ -39,7 +39,7 @@ const createTestUser = async () => {
       {
         name: 'Test User',
         email: 'test@testmail.com',
-        password: 'test', // In a real app, this would be hashed
+        password: 'test123456', // In a real app, this would be hashed
         secretKey: crypto.randomBytes(32).toString('hex')
       },
       { upsert: true, new: true }

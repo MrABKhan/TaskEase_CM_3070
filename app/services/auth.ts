@@ -1,11 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import config from '../config/environment';
 import { Platform } from 'react-native';
 
-const API_URL = Platform.select({
-  android: 'http://10.0.2.2:3000/api',
-  default: 'http://localhost:3000/api',
-});
+const API_URL = config.API_URL;
 
 export interface User {
   userId: string;

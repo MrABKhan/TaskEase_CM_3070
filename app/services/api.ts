@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import auth from './auth';
+import config from '../config/environment';
 
 // Debug logger utility
 const DEBUG = false; // Toggle this to enable/disable debug logs
@@ -13,12 +14,7 @@ const logger = {
   error: (...args: any[]) => console.error(...args)
 };
 
-// Use 10.0.2.2 for Android emulator to access host machine's localhost
-// For web browser, continue using localhost
-const API_URL = Platform.select({
-  android: 'http://10.0.2.2:3000/api',  // Special IP for Android emulator to access host
-  default: 'http://localhost:3000/api',  // Default for web and iOS
-});
+const API_URL = config.API_URL;
 
 logger.info('🌐 Using API URL:', API_URL);
 
@@ -174,6 +170,30 @@ const api = {
     }
   },
 
+  // Get a single task by ID
+  getTask: async (id: string) => {
+    logger.info('📤 Fetching task by ID:', id);
+    try {
+      const response = await axiosInstance.get(`${API_URL}/tasks/${id}`);
+      logger.debug('📥 Task response:', response.data);
+      
+      // Map the response to ensure consistent id field
+      const task = {
+        ...response.data,
+        id: response.data._id || response.data.id,
+      };
+      
+      return task;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        logAxiosError(error);
+      } else {
+        logger.error('❌ Unexpected error:', error);
+      }
+      throw error;
+    }
+  },
+
   // Get today's tasks
   getTodayTasks: async () => {
     try {
@@ -266,10 +286,21 @@ const api = {
         isAiGenerated: taskData.isAiGenerated || false,
       });
       logger.debug('📥 Create task response:', response.data);
-      return {
+
+      // Ensure we have a valid task ID
+      const taskId = response.data._id || response.data.id;
+      if (!taskId) {
+        logger.error('❌ No task ID in response:', response.data);
+        throw new Error('No task ID returned from server');
+      }
+
+      // Return task with consistent id field
+      const task = {
         ...response.data,
-        id: response.data._id
+        id: taskId
       };
+      logger.debug('🔄 Mapped task:', task);
+      return task;
     } catch (error) {
       if (error instanceof AxiosError) {
         logAxiosError(error);

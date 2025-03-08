@@ -39,8 +39,7 @@ export default function TaskDetailScreen() {
 
   const loadTask = async () => {
     try {
-      const response = await api.getTasks();
-      const foundTask = response.find((t: any) => t.id === id);
+      const foundTask = await api.getTask(id);
       if (foundTask) {
         setTask(foundTask);
       } else {
@@ -49,6 +48,7 @@ export default function TaskDetailScreen() {
       }
     } catch (error) {
       console.error('Error loading task:', error);
+      router.back();
     } finally {
       setLoading(false);
     }

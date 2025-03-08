@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { TextInput, Button, Text, IconButton } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import auth from "../services/auth";
@@ -10,7 +10,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
 
   const validateEmail = (email: string) => {
@@ -21,22 +20,19 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (loading) return;
 
-    // Reset error
-    setError('');
-
     // Validate inputs
     if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields 📝');
+      Alert.alert('Missing Information', 'Please fill in all fields 📝');
       return;
     }
 
     if (!validateEmail(email.trim())) {
-      setError('Please enter a valid email address 📧');
+      Alert.alert('Invalid Email', 'Please enter a valid email address 📧');
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long 🔑');
+      Alert.alert('Invalid Password', 'Password must be at least 6 characters long 🔑');
       return;
     }
 
@@ -45,22 +41,26 @@ export default function LoginScreen() {
       await auth.signin(email.trim(), password.trim());
       router.replace('/(tabs)');
     } catch (error: any) {
-      let errorMessage = 'An error occurred during login';
+      let title = 'Login Error';
+      let message = 'An error occurred during login';
       
       // Handle specific error cases
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email 🔍';
+      if (error.message === 'Invalid credentials') {
+        title = 'Invalid Credentials';
+        message = 'The email or password you entered is incorrect 🔒';
+      } else if (error.code === 'auth/user-not-found') {
+        message = 'No account found with this email 🔍';
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password 🔒';
+        message = 'Incorrect password 🔒';
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email format 📧';
+        message = 'Invalid email format 📧';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many attempts. Please try again later ⏳';
+        message = 'Too many attempts. Please try again later ⏳';
       } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your connection 🌐';
+        message = 'Network error. Please check your connection 🌐';
       }
       
-      setError(errorMessage);
+      Alert.alert(title, message);
     } finally {
       setLoading(false);
     }
@@ -78,19 +78,10 @@ export default function LoginScreen() {
           <Text variant="titleMedium" style={styles.subtitle}>Welcome back! 👋</Text>
         </View>
         
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-        
         <TextInput
           label="Email"
           value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            setError('');
-          }}
+          onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
           style={styles.input}
@@ -104,10 +95,7 @@ export default function LoginScreen() {
         <TextInput
           label="Password"
           value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            setError('');
-          }}
+          onChangeText={setPassword}
           secureTextEntry={!showPassword}
           style={styles.input}
           disabled={loading}
@@ -187,15 +175,5 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     marginTop: 16,
-  },
-  errorContainer: {
-    backgroundColor: '#FFE5E5',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#FF453A',
-    textAlign: 'center',
-  },
+  }
 }); 

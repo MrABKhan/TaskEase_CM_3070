@@ -119,6 +119,102 @@ For detailed API documentation, run the backend server and visit:
 http://localhost:3000/api-docs
 ```
 
+## API Configuration
+
+### Environment Setup
+
+The application supports three environments:
+- Development (local development)
+- Staging (internal testing)
+- Production (live deployment)
+
+### Local Development
+
+1. Start the backend server locally:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+2. The frontend will automatically use these API URLs in development:
+   - Android Emulator: `http://10.0.2.2:3000/api`
+   - iOS Simulator/Web: `http://localhost:3000/api`
+
+### Preview/Staging Deployment
+
+1. Configure your staging API URL in `eas.json`:
+   ```json
+   {
+     "build": {
+       "preview": {
+         "env": {
+           "EXPO_PUBLIC_API_URL": "http://your-staging-api-url.com/api",
+           "EXPO_PUBLIC_ENV": "staging"
+         }
+       }
+     }
+   }
+   ```
+
+2. Build the preview version:
+   ```bash
+   eas build --profile preview --platform all
+   ```
+
+### Production Deployment
+
+1. Configure your production API URL in `eas.json`:
+   ```json
+   {
+     "build": {
+       "production": {
+         "env": {
+           "EXPO_PUBLIC_API_URL": "http://your-production-api-url.com/api",
+           "EXPO_PUBLIC_ENV": "production"
+         }
+       }
+     }
+   }
+   ```
+
+2. Build the production version:
+   ```bash
+   eas build --profile production --platform all
+   ```
+
+### Environment Variables
+
+The following environment variables are used for API configuration:
+
+- `EXPO_PUBLIC_API_URL`: The base URL for the API endpoints
+- `EXPO_PUBLIC_ENV`: The current environment ('development', 'staging', or 'production')
+
+### Using Custom API URLs
+
+You can override the API URL for any environment by:
+
+1. Creating a `.env` file in the root directory:
+   ```
+   EXPO_PUBLIC_API_URL=http://your-custom-api-url.com/api
+   EXPO_PUBLIC_ENV=development
+   ```
+
+2. Or using the EAS secret command:
+   ```bash
+   eas secret:create --scope project --name EXPO_PUBLIC_API_URL --value "http://your-custom-api-url.com/api" --type string
+   ```
+
+### Verifying API Configuration
+
+To verify the current API configuration:
+
+1. In development, check the console logs for:
+   ```
+   🌐 Running in [environment] environment with API URL: [url]
+   ```
+
+2. In the app, navigate to Settings > About to view the current API endpoint.
+
 ## Contributing
 
 1. Fork the repository

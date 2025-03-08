@@ -26,9 +26,9 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 
     // Attach user to request object
     req.user = user;
-    next();
+    return next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({ message: 'Error authenticating request' });
+    console.error('Auth error:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 }; 

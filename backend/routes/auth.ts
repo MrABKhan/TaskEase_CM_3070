@@ -8,7 +8,7 @@ import { authMiddleware } from '../middleware/auth';
 const router = express.Router();
 
 // Sign up
-router.post('/signup', async (req, res) => {
+router.post('/signup', async (req, res): Promise<any> => {
   try {
     const { name, email, password, seedData = true } = req.body;
 
@@ -58,7 +58,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // Sign in
-router.post('/signin', async (req, res) => {
+router.post('/signin', async (req, res): Promise<any> => {
   try {
     const { email, password } = req.body;
 
@@ -87,7 +87,7 @@ router.post('/signin', async (req, res) => {
 });
 
 // Reseed sample data
-router.post('/reseed', authMiddleware, async (req, res) => {
+router.post('/reseed', authMiddleware, async (req, res): Promise<any> => {
   try {
     const userId = req.user._id.toString();
     const yearOfTasks = generateYearOfTasks(userId);
