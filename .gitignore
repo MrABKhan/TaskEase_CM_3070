@@ -152,4 +152,6 @@ yarn-error.*
 *.tsbuildinfo
 .yarn.lock
 backend/yarn.lock
+.package-lock.json
+backend/.package-lock.json
 # @end expo-cli

@@ -76,12 +76,7 @@ module.exports = {
         }
       ],
       [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/adaptive-icon.png",
-          "color": "#ffffff",
-          "sounds": ["./assets/sounds/notification.wav"]
-        }
+        "expo-notifications"
       ]
     ],
     experiments: {
