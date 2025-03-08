@@ -21,10 +21,10 @@ const configs: Record<Environment, Config> = {
     API_URL: getDefaultApiUrl(),
   },
   staging: {
-    API_URL: process.env.EXPO_PUBLIC_API_URL || 'http://your-staging-api-url.com/api',
+    API_URL: 'http://173.212.241.12:3000/api',
   },
   production: {
-    API_URL: process.env.EXPO_PUBLIC_API_URL || 'http://your-production-api-url.com/api',
+    API_URL:  'http://173.212.241.12:3000/api',
   },
 };
 
