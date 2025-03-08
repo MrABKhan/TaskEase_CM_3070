@@ -308,6 +308,7 @@ const styles = StyleSheet.create({
   taskList: {
     flex: 1,
     paddingBottom: 16,
+    paddingHorizontal: 16,
   },
   noTasksText: {
     color: '#666',

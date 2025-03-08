@@ -225,7 +225,7 @@ export default function TaskDetailScreen() {
       case 'high':
         return 'arrow-up-bold-circle';
       case 'medium':
-        return 'equal-circle';
+        return 'minus-circle';
       case 'low':
         return 'arrow-down-bold-circle';
       default:
@@ -584,12 +584,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 24,
     gap: 8,
   },
   titleWrapper: {
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   selectionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
     gap: 8,
   },
   tagButton: {
@@ -681,15 +681,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 16,
   },
   descriptionInput: {
     backgroundColor: 'transparent',
     fontSize: 14,
+    padding: 0,
   },
   subtaskList: {
     marginTop: -8,
@@ -714,19 +716,19 @@ const styles = StyleSheet.create({
   aiIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 122, 255, 0.15)',
+    backgroundColor: 'rgba(0, 122, 255, 0.08)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     marginTop: 8,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.3)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderColor: 'rgba(0, 122, 255, 0.15)',
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   aiIndicatorText: {
     fontSize: 12,

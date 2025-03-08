@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   titleContainer: {
     marginBottom: 24,
@@ -545,6 +545,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     minHeight: 120,
     maxHeight: 200,
+    padding: 0,
   },
   tagsContainer: {
     flexDirection: 'row',
