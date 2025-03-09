@@ -46,6 +46,22 @@ const createTestUser = async () => {
     );
     
     console.log(`Test user created/updated successfully with ID: ${testUser._id}`);
+    
+    // Check if test user already has tasks
+    const taskCount = await Task.countDocuments({ userId: testUser._id });
+    
+    // Generate tasks for test user if none exist
+    if (taskCount === 0) {
+      try {
+        const yearOfTasks = generateYearOfTasks(testUser._id.toString());
+        await Task.insertMany(yearOfTasks);
+        console.log(`Generated ${yearOfTasks.length} initial tasks for test user ${testUser._id}`);
+      } catch (error) {
+        console.error('Error generating initial tasks for test user:', error);
+      }
+    } else {
+      console.log(`Test user already has ${taskCount} tasks, skipping task generation`);
+    }
   } catch (error) {
     console.error('Error creating test user:', error);
   }
